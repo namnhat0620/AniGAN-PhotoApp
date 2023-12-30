@@ -1,0 +1,65 @@
+{
+  "name": "_icon_menu_",
+  "version": 32,
+  "source-key": {
+    "type": "figma",
+    "file": "6W0M9gndylIbUZVrvsMLYB",
+    "node": "51:68",
+    "version": "4886466801",
+    "component-id": "51f9cb81f15dbaa7bea917b65f5a50ab88c95de7"
+  },
+  "default": "🦆 icon \"menu\"",
+  "design": {
+    "atoms": [
+      {
+        "type": "group",
+        "id": "top_level",
+        "root": "true"
+      },
+      {
+        "type": "vector",
+        "id": "Vector"
+      }
+    ],
+    "modes": {
+      "🦆 icon \"menu\"": {
+        "rules": [
+          {
+            "id": "top_level",
+            "is-structured": "false",
+            "children": [
+              "Vector"
+            ],
+            "clip-content": "false"
+          },
+          {
+            "id": "Vector",
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "proportional",
+                "value": "1.0"
+              },
+              "height-constraints": {
+                "sizing-mode": "proportional",
+                "value": "1.0"
+              }
+            },
+            "vector-content": "vector.svg"
+          }
+        ]
+      }
+    }
+  },
+  "previews": [
+    {
+      "design": "🦆 icon \"menu\"",
+      "size": {
+        "width": 18.41557502746582,
+        "height": 16.0
+      }
+    }
+  ],
+  "adin-component-search-paths": [],
+  "image-search-paths": [],
+  "vector-search-paths": []
+}
