@@ -95,7 +95,7 @@ fun MainScreenPreview() {
 }
 
 @Composable
-fun Header(modifier: Modifier = Modifier) {
+private fun Header(modifier: Modifier = Modifier) {
     Row (
         modifier
             .height(50.dp)
@@ -124,7 +124,7 @@ fun Header(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun FuncButton(imageId: Int, text: String, modifier: Modifier) {
+private fun FuncButton(imageId: Int, text: String, modifier: Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -143,7 +143,7 @@ fun FuncButton(imageId: Int, text: String, modifier: Modifier) {
 }
 
 @Composable
-fun ListButton(modifier: Modifier = Modifier) {
+private fun ListButton(modifier: Modifier = Modifier) {
     Row (
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
@@ -164,7 +164,7 @@ fun ListButton(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Banner(modifier: Modifier = Modifier) {
+private fun Banner(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(id = R.drawable.banner),
         contentDescription = "banner",
@@ -174,7 +174,7 @@ fun Banner(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Title(text1: String, text2: String, modifier: Modifier = Modifier) {
+internal fun Title(text1: String, text2: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -198,7 +198,7 @@ fun Title(text1: String, text2: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PhotoLibrary(itemList: List<ImageClass>, modifier: Modifier = Modifier) {
+internal fun PhotoLibrary(itemList: List<ImageClass>, modifier: Modifier = Modifier) {
     LazyRow (
         modifier = modifier
             .padding(vertical = 15.dp)
