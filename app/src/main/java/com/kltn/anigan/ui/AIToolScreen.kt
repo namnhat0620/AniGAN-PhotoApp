@@ -57,10 +57,10 @@ fun AIToolScreen() {
 
             Title(text1 = "Style", text2 = "More >")
             val defaultLibrary = listOf<ImageClass>(
-                ImageClass(R.drawable._3, "3"),
-                ImageClass(R.drawable._8, "8"),
-                ImageClass(R.drawable._28, "28"),
-                ImageClass(R.drawable._009, "009"),
+                ImageClass(0, R.drawable._3, "3"),
+                ImageClass(1, R.drawable._8, "8"),
+                ImageClass(2, R.drawable._28, "28"),
+                ImageClass(3, R.drawable._009, "009"),
             )
             PhotoLibrary(defaultLibrary)
         }
@@ -158,7 +158,6 @@ private fun InsertImage(modifier: Modifier = Modifier) {
                     if(permissionCheckResult == PackageManager.PERMISSION_GRANTED) {
                         cameraLauncher.launch(uri)
                     } else {
-                        println("permissionLauncher.launch")
                         permissionLauncher.launch(Manifest.permission.CAMERA)
                     }
                 }
