@@ -12,7 +12,7 @@ import com.kltn.anigan.routes.Routes
 fun AniganNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    startDestination: String = "main"
+    startDestination: String = Routes.MAIN_SCREEN.route
 ) {
     NavHost(
         modifier = modifier,

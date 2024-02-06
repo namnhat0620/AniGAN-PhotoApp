@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -24,7 +22,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.ImageClass
 import com.kltn.anigan.R
@@ -177,48 +174,4 @@ private fun Banner(modifier: Modifier = Modifier) {
         modifier.padding(
             horizontal = 12.dp,
             vertical = 30.dp))
-}
-
-@Composable
-internal fun Title(text1: String, text2: String, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = text1,
-            modifier= Modifier.alignByBaseline(),
-            color = colorResource(id = R.color.white),
-            fontSize = 25.sp
-        )
-        Text(
-            text = text2,
-            modifier = Modifier.alignByBaseline(),
-            color = colorResource(id = R.color.white),
-            fontSize = 15.sp,
-        )
-    }
-
-}
-
-@Composable
-internal fun PhotoLibrary(itemList: List<ImageClass>, modifier: Modifier = Modifier) {
-    LazyRow (
-        modifier = modifier
-            .padding(vertical = 15.dp)
-    ){
-        items(itemList) {
-            Image(
-                painter = painterResource(id = it.imageId),
-                contentDescription = it.description,
-                modifier
-                    .padding(start = 12.dp)
-                    .size(100.dp)
-            )
-        }
-
-    }
-
 }

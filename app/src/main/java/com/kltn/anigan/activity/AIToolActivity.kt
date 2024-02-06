@@ -9,7 +9,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.kltn.anigan.R
 import com.kltn.anigan.ui.AIToolScreen
-import com.kltn.anigan.ui.MainScreen
 import com.kltn.anigan.ui.theme.AniGANTheme
 
 class AIToolActivity : AppCompatActivity() {
