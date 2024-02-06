@@ -32,7 +32,6 @@ import androidx.core.content.FileProvider
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import androidx.core.app.ActivityCompat
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.ImageClass
 import com.kltn.anigan.R
