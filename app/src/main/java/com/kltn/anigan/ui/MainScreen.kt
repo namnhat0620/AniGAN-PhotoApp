@@ -2,6 +2,7 @@ package com.kltn.anigan.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,11 +25,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import com.kltn.anigan.ImageClass
 import com.kltn.anigan.R
+import com.kltn.anigan.routes.Routes
 
 @Composable
-fun MainScreen() {
+fun MainScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -39,7 +42,7 @@ fun MainScreen() {
                 .background(colorResource(id = R.color.black))
         ) {
             Header()
-            ListButton()
+            ListButton(navController = navController)
         }
         Column(
             modifier = Modifier
@@ -124,10 +127,10 @@ private fun Header(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FuncButton(imageId: Int, text: String, modifier: Modifier) {
+private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier
+        modifier = modifier.clickable { onClick() }
     ) {
         Image(
             painter = painterResource(id = imageId),
@@ -143,7 +146,7 @@ private fun FuncButton(imageId: Int, text: String, modifier: Modifier) {
 }
 
 @Composable
-private fun ListButton(modifier: Modifier = Modifier) {
+private fun ListButton(modifier: Modifier = Modifier, navController: NavController ?= null) {
     Row (
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
@@ -153,6 +156,9 @@ private fun ListButton(modifier: Modifier = Modifier) {
         FuncButton(R.drawable.edit_btn, "Edit",
             modifier = modifier)
         FuncButton(R.drawable.ai_tool_btn, "AI Tools",
+            onClick = {
+                navController?.navigate(Routes.AI_TOOLS.route)
+            },
             modifier = modifier)
         FuncButton(R.drawable.collage_btn, "Collage",
             modifier = modifier)

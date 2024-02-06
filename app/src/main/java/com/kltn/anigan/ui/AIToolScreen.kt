@@ -16,14 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kltn.anigan.R
 
 @Composable
 fun AIToolScreen() {
     Column(
-
         modifier = Modifier
             .background(colorResource(id = R.color.black))
             .fillMaxSize()
