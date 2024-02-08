@@ -26,6 +26,8 @@ import androidx.navigation.NavController
 import com.kltn.anigan.ImageClass
 import com.kltn.anigan.R
 import com.kltn.anigan.routes.Routes
+import com.kltn.anigan.ui.shared.components.PhotoLibrary
+import com.kltn.anigan.ui.shared.components.Title
 
 @Composable
 fun MainScreen(navController: NavController) {

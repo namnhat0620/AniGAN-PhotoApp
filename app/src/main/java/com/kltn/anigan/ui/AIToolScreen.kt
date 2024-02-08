@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,7 +24,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import android.Manifest
@@ -35,6 +32,10 @@ import android.content.pm.PackageManager
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.ImageClass
 import com.kltn.anigan.R
+import com.kltn.anigan.ui.shared.components.GenerateSetting
+import com.kltn.anigan.ui.shared.components.PhotoLibrary
+import com.kltn.anigan.ui.shared.components.Title
+import com.kltn.anigan.ui.shared.layouts.Header
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -63,46 +64,8 @@ fun AIToolScreen() {
                 ImageClass(3, R.drawable._009, "009"),
             )
             PhotoLibrary(defaultLibrary)
+            GenerateSetting()
         }
-    }
-}
-
-@Composable
-private fun Header(modifier: Modifier = Modifier) {
-    Row (
-        modifier
-            .height(50.dp)
-            .fillMaxWidth()
-            .background(colorResource(id = R.color.black)),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ){
-        Image(
-            painter = painterResource(id = R.drawable.icon_back),
-            contentDescription = "icon_change_image",
-            modifier
-                .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp),
-        )
-        Row {
-            Image(
-                painter = painterResource(id = R.drawable.icon_change_image),
-                contentDescription = "icon_change_image",
-                modifier
-                    .padding(start = 12.dp, top = 16.dp)
-                    .size(17.dp),
-            )
-
-            //Icon notification
-            Image(
-                painter = painterResource(id = R.drawable.icon_library),
-                contentDescription = "icon_library",
-                modifier
-                    .padding(start = 17.dp, top = 16.dp, end = 12.dp)
-                    .size(17.dp)
-            )
-        }
-
-
     }
 }
 

@@ -1,4 +1,4 @@
-package com.kltn.anigan.ui
+package com.kltn.anigan.ui.shared.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
