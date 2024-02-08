@@ -1,5 +1,10 @@
 package com.kltn.anigan.ui.shared.components
 
+import android.annotation.SuppressLint
+import android.content.ContentResolver
+import android.net.Uri
+import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,10 +25,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.kltn.anigan.R
+import com.kltn.anigan.api.UploadApi
+import com.kltn.anigan.domain.UploadRequestBody
+import com.kltn.anigan.domain.UploadResponse
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 
 const val MIN_VALUE = 1
 const val MAX_VALUE = 20
@@ -73,10 +91,11 @@ private fun NumOfGeneration(
     }
 }
 
+@SuppressLint("Recycle")
 @Composable
-@Preview
-fun GenerateSetting() {
+fun GenerateSetting(capturedImageUri: Uri) {
     var numOfGenerations by remember { mutableIntStateOf(2)}
+    val context = LocalContext.current
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -87,19 +106,71 @@ fun GenerateSetting() {
                 numOfGenerations = newValue
             }
         )
-        Spacer(modifier = Modifier
-            .fillMaxWidth()
-            .height(20.dp))
+        Spacer(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(20.dp)
+        )
         GradientButton(
             gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
             cornerRadius = 16.dp,
             nameButton = "Generate Now!",
-            roundedCornerShape = RoundedCornerShape(size = 30.dp)
+            roundedCornerShape = RoundedCornerShape(size = 30.dp),
+            onClick = {
+                if (capturedImageUri == Uri.EMPTY) {
+                    Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
+                    return@GradientButton
+                }
+
+                val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
+                    capturedImageUri, "r", null
+                ) ?: return@GradientButton
+
+                val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
+                val file =
+                    File(context.cacheDir, context.contentResolver.getFileName(capturedImageUri))
+                val outputStream = FileOutputStream(file)
+                inputStream.copyTo(outputStream)
+
+                val body = UploadRequestBody(file, "image")
+                UploadApi().uploadImage(MultipartBody.Part.createFormData(
+                    "file",
+                    file.name,
+                    body
+                ),
+                    "json".toRequestBody("multipart/form-data".toMediaTypeOrNull())
+                ).enqueue(object : Callback<UploadResponse> {
+                    override fun onResponse(
+                        call: Call<UploadResponse>,
+                        response: Response<UploadResponse>
+                    ) {
+                        response.body()?.let {
+                            Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+                        Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG).show()
+                    }
+                })
+            }
         )
         Text(
             text = "Every creation consumes $numOfGenerations credits.",
             color = Color.Gray
         )
     }
+}
 
+private fun ContentResolver.getFileName(capturedImageUri: Uri): String {
+    var name = ""
+    val returnCursor = this.query(capturedImageUri, null, null, null, null)
+    if (returnCursor != null) {
+        val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        returnCursor.moveToFirst()
+        name = returnCursor.getString(nameIndex)
+        returnCursor.close()
+    }
+
+    return name
 }

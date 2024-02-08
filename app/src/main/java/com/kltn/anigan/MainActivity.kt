@@ -1,4 +1,4 @@
-package com.kltn.anigan.activity
+package com.kltn.anigan
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

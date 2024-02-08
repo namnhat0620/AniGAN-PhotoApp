@@ -30,7 +30,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import coil.compose.rememberImagePainter
-import com.kltn.anigan.ImageClass
+import com.kltn.anigan.domain.ImageClass
 import com.kltn.anigan.R
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
@@ -49,12 +49,22 @@ fun AIToolScreen() {
             .background(colorResource(id = R.color.black))
             .fillMaxSize()
     ){
+
+        var capturedImageUri by remember {
+            mutableStateOf<Uri>(Uri.EMPTY)
+        }
+
         Column(
             modifier = Modifier
                 .background(colorResource(id = R.color.black))
         ) {
             Header()
-            InsertImage()
+            InsertImage(
+                capturedImageUri,
+                setCapturedImageUri = { newUri ->
+                    capturedImageUri = newUri
+                }
+            )
 
             Title(text1 = "Style", text2 = "More >")
             val defaultLibrary = listOf<ImageClass>(
@@ -64,13 +74,17 @@ fun AIToolScreen() {
                 ImageClass(3, R.drawable._009, "009"),
             )
             PhotoLibrary(defaultLibrary)
-            GenerateSetting()
+            GenerateSetting(capturedImageUri)
         }
     }
 }
 
 @Composable
-private fun InsertImage(modifier: Modifier = Modifier) {
+private fun InsertImage(
+    capturedImageUri: Uri,
+    setCapturedImageUri: (Uri) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Row (
         modifier
             .fillMaxWidth()
@@ -87,13 +101,9 @@ private fun InsertImage(modifier: Modifier = Modifier) {
             file
         )
 
-        var capturedImageUri by remember {
-            mutableStateOf<Uri>(Uri.EMPTY)
-        }
-
         val cameraLauncher =
             rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-                capturedImageUri = uri
+                setCapturedImageUri(uri)
             }
 
         val permissionLauncher = rememberLauncherForActivityResult(
