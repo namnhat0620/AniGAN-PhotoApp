@@ -83,10 +83,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
 
     implementation("io.coil-kt:coil-compose:1.4.0")
-//    implementation("com.android.support:recyclerview-v7:27.1.1")
-//    implementation("com.android.support:design:27.1.1")
-//    implementation("com.karumi:dexter:4.1.0")
-//    implementation("info.androidhive:imagefilters:1.0.7")
+    implementation("com.github.bumptech.glide:compose:1.0.0-beta01")
 
     //Upload file
     implementation("com.squareup.retrofit2:retrofit:2.9.0")

@@ -29,13 +29,19 @@ import androidx.core.content.FileProvider
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.util.Log
 import coil.compose.rememberImagePainter
-import com.kltn.anigan.domain.ImageClass
 import com.kltn.anigan.R
+import com.kltn.anigan.api.LoadImageApi
+import com.kltn.anigan.domain.ImageClassFromInternet
+import com.kltn.anigan.domain.LoadImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.ui.shared.layouts.Header
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,15 +71,15 @@ fun AIToolScreen() {
                     capturedImageUri = newUri
                 }
             )
+            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
+
+            getRefImage { updatedList ->
+                // Update the contents of the list variable with the data returned from getRefImage
+                list = updatedList
+            }
 
             Title(text1 = "Style", text2 = "More >")
-            val defaultLibrary = listOf<ImageClass>(
-                ImageClass(0, R.drawable._3, "3"),
-                ImageClass(1, R.drawable._8, "8"),
-                ImageClass(2, R.drawable._28, "28"),
-                ImageClass(3, R.drawable._009, "009"),
-            )
-            PhotoLibrary(defaultLibrary)
+            PhotoLibrary(itemList = list)
             GenerateSetting(capturedImageUri)
         }
     }
@@ -148,4 +154,23 @@ fun Context.createImageFile(): File {
         ".jpg",
         externalCacheDir
     )
+}
+
+private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
+    LoadImageApi().getRefImage().enqueue(object: Callback<LoadImageResponse>{
+        override fun onResponse(
+            call: Call<LoadImageResponse>,
+            response: Response<LoadImageResponse>
+        ) {
+            if(response.isSuccessful) {
+                response.body()?.let {
+                    onImageListLoaded(it.data.list)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
+            Log.i("Load Image Response","onFailure: ${t.message}")
+        }
+    })
 }

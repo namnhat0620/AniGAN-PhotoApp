@@ -26,7 +26,6 @@ import androidx.navigation.NavController
 import com.kltn.anigan.domain.ImageClass
 import com.kltn.anigan.R
 import com.kltn.anigan.routes.Routes
-import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
 
 @Composable
@@ -54,10 +53,10 @@ fun MainScreen(navController: NavController) {
             val defaultLibrary = listOf<ImageClass>(
                 ImageClass()
             )
-            PhotoLibrary(defaultLibrary)
+//            PhotoLibrary(defaultLibrary)
 
             Title(text1 = "Magazine Collage", text2 = "See all >")
-            PhotoLibrary(defaultLibrary)
+//            PhotoLibrary(defaultLibrary)
         }
     }
 }
@@ -86,10 +85,10 @@ fun MainScreenPreview() {
             val defaultLibrary = listOf<ImageClass>(
                 ImageClass()
             )
-            PhotoLibrary(defaultLibrary)
+//            PhotoLibrary(defaultLibrary)
 
             Title(text1 = "Magazine Collage", text2 = "See all >")
-            PhotoLibrary(defaultLibrary)
+//            PhotoLibrary(defaultLibrary)
         }
     }
 
