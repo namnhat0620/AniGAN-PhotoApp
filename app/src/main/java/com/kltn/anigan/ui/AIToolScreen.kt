@@ -60,6 +60,10 @@ fun AIToolScreen() {
             mutableStateOf<Uri>(Uri.EMPTY)
         }
 
+        var referenceImageUrl by remember {
+            mutableStateOf<String?>(null)
+        }
+
         Column(
             modifier = Modifier
                 .background(colorResource(id = R.color.black))
@@ -79,8 +83,15 @@ fun AIToolScreen() {
             }
 
             Title(text1 = "Style", text2 = "More >")
-            PhotoLibrary(itemList = list)
-            GenerateSetting(capturedImageUri)
+            PhotoLibrary(itemList = list, setReferenceImageUrl = { url ->
+                referenceImageUrl = url
+            })
+            GenerateSetting(
+                capturedImageUri,
+                referenceImageUrl,
+                setCapturedImageUri = { newUri ->
+                    capturedImageUri = newUri
+                })
         }
     }
 }

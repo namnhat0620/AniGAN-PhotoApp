@@ -22,6 +22,8 @@ fun AniganNavHost(
         composable(Routes.MAIN_SCREEN.route) {
             MainScreen(navController)
         }
-        composable(Routes.AI_TOOLS.route) { AIToolScreen() }
+        composable(Routes.AI_TOOLS.route) { 
+            AIToolScreen() 
+        }
     }
 }

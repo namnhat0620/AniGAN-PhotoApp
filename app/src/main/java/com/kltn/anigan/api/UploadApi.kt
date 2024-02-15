@@ -14,10 +14,10 @@ import retrofit2.Call
 
 interface UploadApi {
     @Multipart
-    @POST("upload")
+    @POST("upload/user")
     fun uploadImage(
         @Part image: MultipartBody.Part,
-        @Part("desc") desc: RequestBody
+        @Part("reference_image_url") referenceImageUrl: RequestBody
     ): Call<UploadResponse>
 
     companion object {
@@ -30,7 +30,7 @@ interface UploadApi {
                 .build()
 
             return Retrofit.Builder()
-                .baseUrl("https://f996-35-224-173-219.ngrok-free.app/")
+                .baseUrl("https://anigan-be-production.up.railway.app/")
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()

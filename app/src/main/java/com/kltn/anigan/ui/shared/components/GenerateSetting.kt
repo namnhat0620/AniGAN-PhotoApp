@@ -16,10 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -92,9 +94,14 @@ private fun NumOfGeneration(
 
 @SuppressLint("Recycle")
 @Composable
-fun GenerateSetting(capturedImageUri: Uri) {
+fun GenerateSetting(
+    capturedImageUri: Uri,
+    referenceImageUrl: String?,
+    setCapturedImageUri: (Uri) -> Unit,
+    ) {
     var numOfGenerations by remember { mutableIntStateOf(2)}
     val context = LocalContext.current
+    var isLoading by remember {mutableStateOf(false)}
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -110,54 +117,74 @@ fun GenerateSetting(capturedImageUri: Uri) {
                 .fillMaxWidth()
                 .height(20.dp)
         )
-        GradientButton(
-            gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
-            cornerRadius = 16.dp,
-            nameButton = "Generate Now!",
-            roundedCornerShape = RoundedCornerShape(size = 30.dp),
-            onClick = {
-                if (capturedImageUri == Uri.EMPTY) {
-                    Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
-                    return@GradientButton
-                }
+        if(!isLoading) {
+            GradientButton(
+                gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
+                cornerRadius = 16.dp,
+                nameButton = "Generate Now!",
+                roundedCornerShape = RoundedCornerShape(size = 30.dp),
+                onClick = {
+                    isLoading = true
 
-                val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
-                    capturedImageUri, "r", null
-                ) ?: return@GradientButton
+                    if (capturedImageUri == Uri.EMPTY) {
+                        Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
+                        return@GradientButton
+                    }
 
-                val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
-                val file =
-                    File(context.cacheDir, context.contentResolver.getFileName(capturedImageUri))
-                val outputStream = FileOutputStream(file)
-                inputStream.copyTo(outputStream)
+                    if (referenceImageUrl == null) {
+                        Toast.makeText(context, "Choose an reference image first!", Toast.LENGTH_LONG).show()
+                        return@GradientButton
+                    }
 
-                val body = UploadRequestBody(file, "image")
-                UploadApi().uploadImage(MultipartBody.Part.createFormData(
-                    "file",
-                    file.name,
-                    body
-                ),
-                    "json".toRequestBody("multipart/form-data".toMediaTypeOrNull())
-                ).enqueue(object : Callback<UploadResponse> {
-                    override fun onResponse(
-                        call: Call<UploadResponse>,
-                        response: Response<UploadResponse>
-                    ) {
-                        response.body()?.let {
-                            Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                    val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
+                        capturedImageUri, "r", null
+                    ) ?: return@GradientButton
+
+                    val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
+                    val file =
+                        File(context.cacheDir, context.contentResolver.getFileName(capturedImageUri))
+                    val outputStream = FileOutputStream(file)
+                    inputStream.copyTo(outputStream)
+
+                    val body = UploadRequestBody(file, "image")
+                    UploadApi().uploadImage(
+                        MultipartBody.Part.createFormData(
+                            "file",
+                            file.name,
+                            body
+                        ),
+                        referenceImageUrl.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    ).enqueue(object : Callback<UploadResponse> {
+                        override fun onResponse(
+                            call: Call<UploadResponse>,
+                            response: Response<UploadResponse>
+                        ) {
+                            response.body()?.let {
+                                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                                isLoading = false
+                                setCapturedImageUri(Uri.parse(it.url))
+                            }
                         }
-                    }
 
-                    override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                        Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG).show()
-                    }
-                })
-            }
-        )
-        Text(
-            text = "Every creation consumes $numOfGenerations credits.",
-            color = Color.Gray
-        )
+                        override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
+                            isLoading = false
+                            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG).show()
+                        }
+                    })
+                }
+            )
+            Text(
+                text = "Every creation consumes $numOfGenerations credits.",
+                color = Color.Gray
+            )
+        }
+        else {
+            CircularProgressIndicator()
+            Text(
+                text = "Waiting for less than 1 minute.",
+                color = Color.Gray
+            )
+        }
     }
 }
 

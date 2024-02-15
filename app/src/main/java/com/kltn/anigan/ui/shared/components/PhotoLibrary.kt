@@ -23,6 +23,7 @@ import com.kltn.anigan.domain.ImageClassFromInternet
 @Composable
 internal fun PhotoLibrary(
     itemList: List<ImageClassFromInternet>,
+    setReferenceImageUrl: (String) -> Unit,
     modifier: Modifier = Modifier) {
     var chosenItemIndex: Int by remember { mutableIntStateOf(0) }
     LazyRow (
@@ -39,6 +40,7 @@ internal fun PhotoLibrary(
                     .size(100.dp)
                     .clickable {
                         chosenItemIndex = it.image_id
+                        setReferenceImageUrl(it.url.toString())
                     }
                     .graphicsLayer { alpha = if (it.image_id == chosenItemIndex) 0.5f else 1f }
             )
