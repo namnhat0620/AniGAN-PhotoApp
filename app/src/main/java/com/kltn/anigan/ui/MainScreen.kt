@@ -23,10 +23,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.kltn.anigan.domain.ImageClass
 import com.kltn.anigan.R
 import com.kltn.anigan.routes.Routes
-import com.kltn.anigan.ui.shared.components.Title
 
 @Composable
 fun MainScreen(navController: NavController) {
@@ -49,13 +47,13 @@ fun MainScreen(navController: NavController) {
         ) {
             Banner()
 
-            Title(text1 = "Edit Your Photos", text2 = "All photos >")
-            val defaultLibrary = listOf<ImageClass>(
-                ImageClass()
-            )
+//            Title(text1 = "Edit Your Photos", text2 = "All photos >")
+//            val defaultLibrary = listOf<ImageClass>(
+//                ImageClass()
+//            )
 //            PhotoLibrary(defaultLibrary)
 
-            Title(text1 = "Magazine Collage", text2 = "See all >")
+//            Title(text1 = "Magazine Collage", text2 = "See all >")
 //            PhotoLibrary(defaultLibrary)
         }
     }
@@ -81,13 +79,13 @@ fun MainScreenPreview() {
         ) {
             Banner()
 
-            Title(text1 = "Edit Your Photos", text2 = "All photos >")
-            val defaultLibrary = listOf<ImageClass>(
-                ImageClass()
-            )
+//            Title(text1 = "Edit Your Photos", text2 = "All photos >")
+//            val defaultLibrary = listOf<ImageClass>(
+//                ImageClass()
+//            )
 //            PhotoLibrary(defaultLibrary)
 
-            Title(text1 = "Magazine Collage", text2 = "See all >")
+//            Title(text1 = "Magazine Collage", text2 = "See all >")
 //            PhotoLibrary(defaultLibrary)
         }
     }

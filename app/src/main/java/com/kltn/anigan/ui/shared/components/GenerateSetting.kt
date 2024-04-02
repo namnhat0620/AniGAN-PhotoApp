@@ -30,10 +30,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
 import com.kltn.anigan.domain.UploadRequestBody
 import com.kltn.anigan.domain.UploadResponse
+import com.kltn.anigan.routes.Routes
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -76,7 +78,8 @@ private fun NumOfGeneration(
             Text(
                 text = numOfGenerations.toString(),
                 color = Color.White,
-                modifier = Modifier.padding(10.dp, 0.dp))
+                modifier = Modifier.padding(10.dp, 0.dp)
+            )
             Image(
                 painter = painterResource(id = R.drawable.icon_add_circled_outline),
                 contentDescription = null,
@@ -97,11 +100,11 @@ private fun NumOfGeneration(
 fun GenerateSetting(
     capturedImageUri: Uri,
     referenceImageUrl: String?,
-    setCapturedImageUri: (Uri) -> Unit,
-    ) {
-    var numOfGenerations by remember { mutableIntStateOf(2)}
+    navController: NavController
+) {
+    var numOfGenerations by remember { mutableIntStateOf(2) }
     val context = LocalContext.current
-    var isLoading by remember {mutableStateOf(false)}
+    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
@@ -117,22 +120,27 @@ fun GenerateSetting(
                 .fillMaxWidth()
                 .height(20.dp)
         )
-        if(!isLoading) {
+        if (!isLoading) {
             GradientButton(
                 gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
                 cornerRadius = 16.dp,
                 nameButton = "Generate Now!",
                 roundedCornerShape = RoundedCornerShape(size = 30.dp),
+//                onClick = {
+//                    navController.navigate("${Routes.EDIT_SCREEN.route}?uri=https://anigan-be-production.up.railway.app/public/reference/1708056651522-1795111.png")
+//                }
                 onClick = {
-                    isLoading = true
-
                     if (capturedImageUri == Uri.EMPTY) {
                         Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
                         return@GradientButton
                     }
 
                     if (referenceImageUrl == null) {
-                        Toast.makeText(context, "Choose an reference image first!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            context,
+                            "Choose an reference image first!",
+                            Toast.LENGTH_LONG
+                        ).show()
                         return@GradientButton
                     }
 
@@ -140,9 +148,14 @@ fun GenerateSetting(
                         capturedImageUri, "r", null
                     ) ?: return@GradientButton
 
+                    isLoading = true
+
                     val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
                     val file =
-                        File(context.cacheDir, context.contentResolver.getFileName(capturedImageUri))
+                        File(
+                            context.cacheDir,
+                            context.contentResolver.getFileName(capturedImageUri)
+                        )
                     val outputStream = FileOutputStream(file)
                     inputStream.copyTo(outputStream)
 
@@ -162,13 +175,14 @@ fun GenerateSetting(
                             response.body()?.let {
                                 Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
                                 isLoading = false
-                                setCapturedImageUri(Uri.parse(it.url))
+                                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=${it.url}")
                             }
                         }
 
                         override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
                             isLoading = false
-                            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                                .show()
                         }
                     })
                 }
@@ -177,8 +191,7 @@ fun GenerateSetting(
                 text = "Every creation consumes $numOfGenerations credits.",
                 color = Color.Gray
             )
-        }
-        else {
+        } else {
             CircularProgressIndicator()
             Text(
                 text = "Waiting for less than 1 minute.",

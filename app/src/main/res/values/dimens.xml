@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="insert_image_AI_Tools">230.dp</dimen>
+    <dimen name="image_view_edit_screen">300.dp</dimen>
 </resources>

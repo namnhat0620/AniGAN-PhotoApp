@@ -1,7 +1,11 @@
 package com.kltn.anigan.ui.shared.layouts
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +17,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.kltn.anigan.R
 
 
 @Composable
-fun Header(modifier: Modifier = Modifier) {
+fun Header(
+    setCapturedImageUri: (Uri?) -> Unit,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {uri ->
+            setCapturedImageUri(uri)
+    })
+
     Row (
         modifier
             .height(50.dp)
@@ -30,7 +45,10 @@ fun Header(modifier: Modifier = Modifier) {
             contentDescription = "icon_change_image",
             modifier
                 .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp),
+                .size(17.dp)
+                .clickable {
+                           navController.popBackStack()
+                },
         )
         Row {
             Image(
@@ -38,7 +56,8 @@ fun Header(modifier: Modifier = Modifier) {
                 contentDescription = "icon_change_image",
                 modifier
                     .padding(start = 12.dp, top = 16.dp)
-                    .size(17.dp),
+                    .size(17.dp)
+                    .clickable { galleryLauncher.launch("image/*") }
             )
 
             //Icon notification

@@ -6,6 +6,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.kltn.anigan.routes.Routes
 
 @Composable
@@ -14,6 +16,7 @@ fun AniganNavHost(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.MAIN_SCREEN.route
 ) {
+
     NavHost(
         modifier = modifier,
         navController = navController,
@@ -23,7 +26,13 @@ fun AniganNavHost(
             MainScreen(navController)
         }
         composable(Routes.AI_TOOLS.route) { 
-            AIToolScreen() 
+            AIToolScreen(navController)
+        }
+        composable(
+            "${Routes.EDIT_SCREEN.route}?uri={uri}",
+            arguments = listOf(navArgument("uri") { type = NavType.StringType })
+        ) {backStackEntry ->
+            EditScreen(navController, backStackEntry.arguments?.getString("uri"))
         }
     }
 }
