@@ -34,5 +34,27 @@ fun AniganNavHost(
         ) {backStackEntry ->
             EditScreen(navController, backStackEntry.arguments?.getString("uri"))
         }
+
+        composable(
+            "${Routes.FILL_TEXT_TOOL.route}?uri={uri}",
+            arguments = listOf(navArgument("uri") { type = NavType.StringType })
+        ) {backStackEntry ->
+            FillTextScreen(navController = navController, uri = backStackEntry.arguments?.getString("uri"))
+        }
+
+        composable(Routes.BG_REMOVER_TOOL.route) {
+            BGRemoverScreen(navController)
+        }
+
+        composable(Routes.COLLAGE_TOOL.route) {
+             CollageScreen(navController)
+        }
+
+        composable(
+            "${Routes.FILLTER_TOOL.route}?uri={uri}",
+            arguments = listOf(navArgument("uri") { type = NavType.StringType })
+        ) {backStackEntry ->
+            FillterScreen(navController = navController, uri = backStackEntry.arguments?.getString("uri"))
+        }
     }
 }

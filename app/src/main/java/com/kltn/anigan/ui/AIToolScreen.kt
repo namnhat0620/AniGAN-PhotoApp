@@ -208,7 +208,7 @@ private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Uni
 }
 
 // Function to create a square bitmap from a bitmap
-fun createSquareBitmap(bitmap: Bitmap): Bitmap {
+private fun createSquareBitmap(bitmap: Bitmap): Bitmap {
     val size = min(bitmap.width, bitmap.height)
     val startX = (bitmap.width - size) / 2
     val startY = (bitmap.height - size) / 2
