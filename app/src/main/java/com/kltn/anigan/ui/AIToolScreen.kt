@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import android.provider.MediaStore
@@ -20,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,17 +39,16 @@ import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.ImageClassFromInternet
+import com.kltn.anigan.domain.ImageType
 import com.kltn.anigan.domain.LoadImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
-import com.kltn.anigan.ui.shared.components.PhotoLibrary
-import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.ui.shared.layouts.Header
+import com.kltn.anigan.utils.BitmapUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -63,45 +62,50 @@ fun AIToolScreen(navController: NavController) {
         mutableStateOf<Uri>(Uri.EMPTY)
     }
 
-    var referenceImageUrl by remember {
-        mutableStateOf<String?>(null)
-    }
+//    var referenceImageUrl by remember {
+//        mutableStateOf<String?>(null)
+//    }
 
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
+            .fillMaxHeight(),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Header(
-            setCapturedImageUri = { newUri ->
-                if (newUri != null) {
+        Column{
+            Header(
+                setCapturedImageUri = { newUri ->
+                    if (newUri != null) {
+                        capturedImageUri = newUri
+                    }
+                },
+                navController
+            )
+            InsertImage(
+                capturedImageUri,
+                setCapturedImageUri = { newUri ->
                     capturedImageUri = newUri
-                }
-            },
-            navController
-        )
-        InsertImage(
-            capturedImageUri,
-            setCapturedImageUri = { newUri ->
-                capturedImageUri = newUri
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-        )
-        var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+            )
+//            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
 
-        getRefImage { updatedList ->
-            // Update the contents of the list variable with the data returned from getRefImage
-            list = updatedList
+//            getRefImage { updatedList ->
+//                // Update the contents of the list variable with the data returned from getRefImage
+//                list = updatedList
+//            }
+
+//            Title(text1 = "Style", text2 = "More >")
+//            PhotoLibrary(itemList = list, setReferenceImageUrl = { url ->
+//                referenceImageUrl = url
+//            })
         }
 
-        Title(text1 = "Style", text2 = "More >")
-        PhotoLibrary(itemList = list, setReferenceImageUrl = { url ->
-            referenceImageUrl = url
-        })
         GenerateSetting(
             capturedImageUri,
-            referenceImageUrl,
+            "",
             navController
         )
 
@@ -124,7 +128,7 @@ private fun InsertImage(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-            val bitmap = getBitmapFromUri(uri, context) ?: return@rememberLauncherForActivityResult
+            val bitmap = BitmapUtils.getBitmapFromUri(uri, context) ?: return@rememberLauncherForActivityResult
             val squareBitmap = createSquareBitmap(bitmap)
 
             // Save squareBitmap to file and get the new URI
@@ -189,7 +193,7 @@ fun Context.createImageFile(): File {
 }
 
 private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
-    LoadImageApi().getRefImage().enqueue(object: Callback<LoadImageResponse>{
+    LoadImageApi().getRefImage(ImageType.REFERENCE_IMAGE.type).enqueue(object: Callback<LoadImageResponse>{
         override fun onResponse(
             call: Call<LoadImageResponse>,
             response: Response<LoadImageResponse>
@@ -218,17 +222,6 @@ fun createSquareBitmap(bitmap: Bitmap): Bitmap {
     matrix.postRotate(90f)
     return Bitmap.createBitmap(bitmap, startX, startY, size, size, matrix, true)
 }
-
-private fun getBitmapFromUri(uri: Uri, context: Context): Bitmap? {
-    return try {
-        val inputStream: InputStream? = context.contentResolver.openInputStream(uri)
-        BitmapFactory.decodeStream(inputStream)
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
-}
-
 
 private fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri? {
     // Create a file in the cache directory

@@ -47,7 +47,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 
 const val MIN_VALUE = 1
-const val MAX_VALUE = 20
+const val MAX_VALUE = 3
 
 @Composable
 private fun NumOfGeneration(
@@ -102,7 +102,7 @@ fun GenerateSetting(
     referenceImageUrl: String?,
     navController: NavController
 ) {
-    var numOfGenerations by remember { mutableIntStateOf(2) }
+    var numOfGenerations by remember { mutableIntStateOf(1) }
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
 

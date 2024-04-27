@@ -1,5 +1,6 @@
 package com.kltn.anigan.api
 
+import com.kltn.anigan.api.BaseURL.BaseURL.BASE_URL
 import com.kltn.anigan.domain.UploadResponse
 import okhttp3.OkHttpClient
 import okhttp3.MultipartBody
@@ -30,7 +31,7 @@ interface UploadApi {
                 .build()
 
             return Retrofit.Builder()
-                .baseUrl("https://anigan-be-production.up.railway.app/")
+                .baseUrl(BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()

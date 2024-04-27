@@ -1,5 +1,7 @@
 package com.kltn.anigan.ui
 
+import android.app.Activity
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
@@ -29,15 +32,26 @@ import androidx.navigation.NavController
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
+import com.facebook.share.model.SharePhoto
+import com.facebook.share.model.SharePhotoContent
+import com.facebook.share.widget.ShareDialog
 import com.kltn.anigan.R
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalGlideComposeApi::class)
+@OptIn(ExperimentalGlideComposeApi::class, DelicateCoroutinesApi::class)
 @Composable
 fun EditScreen(
     navController: NavController,
     uri: String?,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val activity = LocalContext.current as? Activity ?: return // Get the activity from the LocalContext
+
     Column(
         modifier.background(Color.Black)
     ) {
@@ -50,6 +64,7 @@ fun EditScreen(
                 .fillMaxWidth()
                 .height(dimensionResource(id = R.dimen.insert_image_AI_Tools))
         )
+        Spacer(modifier = modifier.height(20.dp))
         Row(
             modifier              .fillMaxWidth(),
             horizontalArrangement = Arrangement.Center
@@ -57,7 +72,16 @@ fun EditScreen(
             CustomButton(
                 drawableId = R.drawable.icon_share,
                 text = "Share",
-                backgroundColorId = R.color.background_gray
+                backgroundColorId = R.color.background_gray,
+                modifier = modifier.clickable {
+                    if(uri == null) return@clickable
+                    GlobalScope.launch(Dispatchers.Main) {
+                        val bitmap = getBitmapFromUrl(uri, context) ?: return@launch
+                        // Use the bitmap here on the main UI thread
+                        val sharePhotoContent = sharePhotoFB(bitmap)
+                        ShareDialog.show(activity, sharePhotoContent)
+                    }
+                }
             )
             Spacer(modifier = modifier.width(10.dp))
             CustomButton(
@@ -133,4 +157,13 @@ fun CustomButton(
             Text(text = text, fontSize = 18.sp)
         }
     }
+}
+
+private fun sharePhotoFB(image: Bitmap): SharePhotoContent {
+    val photo = SharePhoto.Builder()
+        .setBitmap(image)
+        .build()
+    return SharePhotoContent.Builder()
+        .addPhoto(photo)
+        .build()
 }

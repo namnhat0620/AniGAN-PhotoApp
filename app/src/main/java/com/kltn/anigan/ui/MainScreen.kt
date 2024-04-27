@@ -1,5 +1,6 @@
 package com.kltn.anigan.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,19 +16,44 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
+import com.kltn.anigan.api.LoadImageApi
+import com.kltn.anigan.domain.ImageClassFromInternet
+import com.kltn.anigan.domain.ImageType
+import com.kltn.anigan.domain.LoadImageResponse
 import com.kltn.anigan.routes.Routes
+import com.kltn.anigan.ui.shared.components.PhotoLibrary
+import com.kltn.anigan.ui.shared.components.Title
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 @Composable
 fun MainScreen(navController: NavController) {
+    var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
+    var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
+
+    getImage(type = ImageType.USER_IMAGE.type) { updatedList ->
+        // Update the contents of the list variable with the data returned from getRefImage
+        userImages = updatedList
+    }
+
+    getImage(type = ImageType.ANIGAN_IMAGE.type) { updatedList ->
+        // Update the contents of the list variable with the data returned from getRefImage
+        aniganImages = updatedList
+    }
+
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -47,50 +73,13 @@ fun MainScreen(navController: NavController) {
         ) {
             Banner()
 
-//            Title(text1 = "Edit Your Photos", text2 = "All photos >")
-//            val defaultLibrary = listOf<ImageClass>(
-//                ImageClass()
-//            )
-//            PhotoLibrary(defaultLibrary)
+            Title(text1 = "Edit Your Photos", text2 = "")
+            PhotoLibrary(userImages)
 
-//            Title(text1 = "Magazine Collage", text2 = "See all >")
-//            PhotoLibrary(defaultLibrary)
+            Title(text1 = "History", text2 = "")
+            PhotoLibrary(aniganImages)
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    Column(
-        modifier = Modifier.background(color = colorResource(id = R.color.black))
-    ){
-        Column(
-            modifier = Modifier
-                .background(colorResource(id = R.color.black))
-        ) {
-            Header()
-            ListButton()
-        }
-        Column(
-            modifier = Modifier
-                .background(colorResource(id = R.color.black))
-                .verticalScroll(rememberScrollState())
-        ) {
-            Banner()
-
-//            Title(text1 = "Edit Your Photos", text2 = "All photos >")
-//            val defaultLibrary = listOf<ImageClass>(
-//                ImageClass()
-//            )
-//            PhotoLibrary(defaultLibrary)
-
-//            Title(text1 = "Magazine Collage", text2 = "See all >")
-//            PhotoLibrary(defaultLibrary)
-        }
-    }
-
-
 }
 
 @Composable
@@ -173,4 +162,24 @@ private fun Banner(modifier: Modifier = Modifier) {
         modifier.padding(
             horizontal = 12.dp,
             vertical = 30.dp))
+}
+
+private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
+    LoadImageApi().getRefImage(type).enqueue(object:
+        Callback<LoadImageResponse> {
+        override fun onResponse(
+            call: Call<LoadImageResponse>,
+            response: Response<LoadImageResponse>
+        ) {
+            if(response.isSuccessful) {
+                response.body()?.let {
+                    onImageListLoaded(it.data.list)
+                }
+            }
+        }
+
+        override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
+            Log.i("Load Image Response","onFailure: ${t.message}")
+        }
+    })
 }

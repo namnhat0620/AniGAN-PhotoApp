@@ -6,6 +6,7 @@ import com.google.gson.JsonDeserializationContext
 import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.JsonParseException
+import com.kltn.anigan.api.BaseURL.BaseURL.BASE_URL
 import com.kltn.anigan.domain.LoadImageResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -13,13 +14,15 @@ import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Query
 import retrofit2.http.Url
-import java.net.URL
 import java.lang.reflect.Type
+import java.net.URL
+
 
 interface LoadImageApi {
-    @GET("/image/reference")
-    fun getRefImage(): Call<LoadImageResponse>
+    @GET("/image")
+    fun getRefImage(@Query("type") type: Int, @Query("limit") limit: Int = 5): Call<LoadImageResponse>
 
     companion object {
         operator fun invoke(): LoadImageApi{
@@ -36,7 +39,7 @@ interface LoadImageApi {
                 .create()
 
             return Retrofit.Builder()
-                .baseUrl("https://anigan-be-production.up.railway.app")
+                .baseUrl(BASE_URL)
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()

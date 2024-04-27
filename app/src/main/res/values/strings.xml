@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">AniGAN</string>
+    <string name="facebook_app_id">792160209215122</string>
+    <string name="facebook_client_token">fc87e34cfc17b272561cbf428f8e9acb</string>
 </resources>
