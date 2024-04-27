@@ -1,6 +1,9 @@
 package com.kltn.anigan.ui
 
 import android.util.Log
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.ImageClassFromInternet
@@ -113,6 +117,9 @@ private fun Header(modifier: Modifier = Modifier) {
 
 @Composable
 private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
+
+
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable { onClick() }
@@ -132,13 +139,30 @@ private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, mo
 
 @Composable
 private fun ListButton(modifier: Modifier = Modifier, navController: NavController ?= null) {
+
+    var capturedImageUri by remember {
+        mutableStateOf<Uri>(Uri.EMPTY)
+    }
+
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {
+            newUri ->
+            if (newUri != null) {
+                navController?.navigate("${Routes.FILLTER_TOOL.route}?uri=${newUri}")
+//                capturedImageUri = newUri;
+            }
+        }
+    )
     Row (
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
-
     )
     {
         FuncButton(R.drawable.edit_btn, "Edit",
+            onClick = {
+                galleryLauncher.launch("image/*")
+            },
             modifier = modifier)
         FuncButton(R.drawable.ai_tool_btn, "AI Tools",
             onClick = {
@@ -146,13 +170,26 @@ private fun ListButton(modifier: Modifier = Modifier, navController: NavControll
             },
             modifier = modifier)
         FuncButton(R.drawable.collage_btn, "Collage",
+            onClick = {
+                navController?.navigate(Routes.COLLAGE_TOOL.route)
+            },
             modifier = modifier)
         FuncButton(R.drawable.bg_remove_btn, "Bg\nremover",
+            onClick = {
+                navController?.navigate(Routes.BG_REMOVER_TOOL.route)
+            },
             modifier = modifier)
         FuncButton(R.drawable.more_btn, "More",
             modifier = modifier)
     }
+
+    Image(
+        painter = rememberImagePainter(capturedImageUri),
+        contentDescription = null
+    )
 }
+
+
 
 @Composable
 private fun Banner(modifier: Modifier = Modifier) {
@@ -183,3 +220,4 @@ private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>
         }
     })
 }
+
