@@ -1,4 +1,4 @@
-package com.kltn.anigan.domain
+package com.kltn.anigan.domain.response
 
 data class UploadResponse(
     val url: String,

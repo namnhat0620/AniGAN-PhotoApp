@@ -1,7 +1,7 @@
 package com.kltn.anigan.api
 
 import com.kltn.anigan.api.BaseURL.BaseURL.BASE_URL
-import com.kltn.anigan.domain.UploadResponse
+import com.kltn.anigan.domain.response.TransformResponse
 import okhttp3.OkHttpClient
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -18,8 +18,9 @@ interface UploadApi {
     @POST("upload/user")
     fun uploadImage(
         @Part image: MultipartBody.Part,
+        @Part("model_id") modelId: RequestBody,
         @Part("reference_image_url") referenceImageUrl: RequestBody
-    ): Call<UploadResponse>
+    ): Call<TransformResponse>
 
     companion object {
         operator fun invoke(): UploadApi{

@@ -1,4 +1,4 @@
-package com.kltn.anigan.domain
+package com.kltn.anigan.domain.enums
 
 enum class ImageType(val type: Int) {
     REFERENCE_IMAGE(0),

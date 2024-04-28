@@ -1,7 +1,7 @@
 package com.kltn.anigan.ui
 
-import android.util.Log
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -30,12 +30,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.ImageType
-import com.kltn.anigan.domain.LoadImageResponse
+import com.kltn.anigan.domain.enums.EditType
+import com.kltn.anigan.domain.enums.ImageType
+import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
@@ -47,7 +47,9 @@ import retrofit2.Response
 fun MainScreen(navController: NavController) {
     var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
-
+    var capturedImageUri by remember {
+        mutableStateOf<Uri>(Uri.EMPTY)
+    }
     getImage(type = ImageType.USER_IMAGE.type) { updatedList ->
         // Update the contents of the list variable with the data returned from getRefImage
         userImages = updatedList
@@ -117,9 +119,6 @@ private fun Header(modifier: Modifier = Modifier) {
 
 @Composable
 private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
-
-
-
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable { onClick() }
@@ -139,21 +138,15 @@ private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, mo
 
 @Composable
 private fun ListButton(modifier: Modifier = Modifier, navController: NavController ?= null) {
-
-    var capturedImageUri by remember {
-        mutableStateOf<Uri>(Uri.EMPTY)
-    }
-
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
-        onResult = {
-            newUri ->
-            if (newUri != null) {
-                navController?.navigate("${Routes.FILLTER_TOOL.route}?uri=${newUri}")
-//                capturedImageUri = newUri;
+        onResult = { newUri ->
+            if (newUri != null && navController != null) {
+                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri&editType=${EditType.DEFAULT.type}")
             }
         }
     )
+
     Row (
         modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
@@ -182,11 +175,6 @@ private fun ListButton(modifier: Modifier = Modifier, navController: NavControll
         FuncButton(R.drawable.more_btn, "More",
             modifier = modifier)
     }
-
-    Image(
-        painter = rememberImagePainter(capturedImageUri),
-        contentDescription = null
-    )
 }
 
 

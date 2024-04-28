@@ -1,4 +1,6 @@
-package com.kltn.anigan.domain
+package com.kltn.anigan.domain.response
+
+import com.kltn.anigan.domain.ImageClassFromInternet
 
 data class LoadImageResponse (
     val statusCode: Int,

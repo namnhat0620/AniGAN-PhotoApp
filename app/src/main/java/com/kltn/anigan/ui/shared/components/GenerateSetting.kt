@@ -1,10 +1,7 @@
 package com.kltn.anigan.ui.shared.components
 
 import android.annotation.SuppressLint
-import android.content.ContentResolver
 import android.net.Uri
-import android.provider.OpenableColumns
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,19 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
-import com.kltn.anigan.api.UploadApi
-import com.kltn.anigan.domain.UploadRequestBody
-import com.kltn.anigan.domain.UploadResponse
 import com.kltn.anigan.routes.Routes
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 
 const val MIN_VALUE = 1
 const val MAX_VALUE = 3
@@ -126,65 +111,8 @@ fun GenerateSetting(
                 cornerRadius = 16.dp,
                 nameButton = "Generate Now!",
                 roundedCornerShape = RoundedCornerShape(size = 30.dp),
-//                onClick = {
-//                    navController.navigate("${Routes.EDIT_SCREEN.route}?uri=https://anigan-be-production.up.railway.app/public/reference/1708056651522-1795111.png")
-//                }
                 onClick = {
-                    if (capturedImageUri == Uri.EMPTY) {
-                        Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
-                        return@GradientButton
-                    }
-
-                    if (referenceImageUrl == null) {
-                        Toast.makeText(
-                            context,
-                            "Choose an reference image first!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        return@GradientButton
-                    }
-
-                    val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
-                        capturedImageUri, "r", null
-                    ) ?: return@GradientButton
-
-                    isLoading = true
-
-                    val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
-                    val file =
-                        File(
-                            context.cacheDir,
-                            context.contentResolver.getFileName(capturedImageUri)
-                        )
-                    val outputStream = FileOutputStream(file)
-                    inputStream.copyTo(outputStream)
-
-                    val body = UploadRequestBody(file, "image")
-                    UploadApi().uploadImage(
-                        MultipartBody.Part.createFormData(
-                            "file",
-                            file.name,
-                            body
-                        ),
-                        referenceImageUrl.toRequestBody("text/plain".toMediaTypeOrNull()),
-                    ).enqueue(object : Callback<UploadResponse> {
-                        override fun onResponse(
-                            call: Call<UploadResponse>,
-                            response: Response<UploadResponse>
-                        ) {
-                            response.body()?.let {
-                                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                                isLoading = false
-                                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=${it.url}")
-                            }
-                        }
-
-                        override fun onFailure(call: Call<UploadResponse>, t: Throwable) {
-                            isLoading = false
-                            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
-                                .show()
-                        }
-                    })
+                    navController.navigate("${Routes.AI_RESULT_SCREEN.route}?numGenerations=$numOfGenerations&userUri=$capturedImageUri")
                 }
             )
             Text(
@@ -199,17 +127,4 @@ fun GenerateSetting(
             )
         }
     }
-}
-
-private fun ContentResolver.getFileName(capturedImageUri: Uri): String {
-    var name = ""
-    val returnCursor = this.query(capturedImageUri, null, null, null, null)
-    if (returnCursor != null) {
-        val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        returnCursor.moveToFirst()
-        name = returnCursor.getString(nameIndex)
-        returnCursor.close()
-    }
-
-    return name
 }

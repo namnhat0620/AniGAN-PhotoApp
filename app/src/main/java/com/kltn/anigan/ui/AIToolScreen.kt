@@ -39,8 +39,8 @@ import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.ImageType
-import com.kltn.anigan.domain.LoadImageResponse
+import com.kltn.anigan.domain.enums.ImageType
+import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.ui.shared.layouts.Header
 import com.kltn.anigan.utils.BitmapUtils

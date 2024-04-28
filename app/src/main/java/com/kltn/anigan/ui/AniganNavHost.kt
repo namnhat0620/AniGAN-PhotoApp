@@ -29,10 +29,29 @@ fun AniganNavHost(
             AIToolScreen(navController)
         }
         composable(
-            "${Routes.EDIT_SCREEN.route}?uri={uri}",
-            arguments = listOf(navArgument("uri") { type = NavType.StringType })
+            "${Routes.AI_RESULT_SCREEN.route}?numGenerations={num}&userUri={userUri}",
+            arguments = listOf(
+                navArgument("num") { type = NavType.IntType },
+                navArgument("userUri") { type = NavType.StringType },
+            )
         ) {backStackEntry ->
-            EditScreen(navController, backStackEntry.arguments?.getString("uri"))
+            AIResultScreen(navController,
+                backStackEntry.arguments?.getInt("num"),
+                backStackEntry.arguments?.getString("userUri")
+            )
+        }
+        composable(
+            "${Routes.EDIT_SCREEN.route}?uri={uri}&editType={editType}",
+            arguments = listOf(
+                navArgument("uri") { type = NavType.StringType },
+                navArgument("editType") { type = NavType.StringType },
+            )
+        ) {backStackEntry ->
+            EditScreen(
+                navController,
+                backStackEntry.arguments?.getString("uri"),
+                backStackEntry.arguments?.getString("editType")
+            )
         }
 
         composable(
@@ -48,13 +67,6 @@ fun AniganNavHost(
 
         composable(Routes.COLLAGE_TOOL.route) {
              CollageScreen(navController)
-        }
-
-        composable(
-            "${Routes.FILLTER_TOOL.route}?uri={uri}",
-            arguments = listOf(navArgument("uri") { type = NavType.StringType })
-        ) {backStackEntry ->
-            FillterScreen(navController = navController, uri = backStackEntry.arguments?.getString("uri"))
         }
     }
 }

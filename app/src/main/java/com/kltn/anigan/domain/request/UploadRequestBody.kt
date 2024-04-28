@@ -1,4 +1,4 @@
-package com.kltn.anigan.domain
+package com.kltn.anigan.domain.request
 
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody

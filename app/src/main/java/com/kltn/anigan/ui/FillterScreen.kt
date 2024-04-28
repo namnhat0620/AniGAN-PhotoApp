@@ -1,14 +1,11 @@
 package com.kltn.anigan.ui
 
 import android.net.Uri
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
@@ -22,27 +19,16 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.ui.shared.components.FuncButton
-import com.kltn.anigan.ui.shared.components.ListButton
-import com.kltn.anigan.ui.shared.components.ListButton_Fillter
 import com.kltn.anigan.ui.shared.layouts.Footer
-import com.kltn.anigan.ui.shared.layouts.Header1
+import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 
 @Composable
-fun FillterScreen(navController: NavController,uri: String?) {
-
-    var capturedImageUri by remember {
-        mutableStateOf<Uri>(Uri.EMPTY)
-    }
-    capturedImageUri = Uri.parse(encodeUri(uri ?: ""));
-
+fun FillterScreen(navController: NavController,uri: Uri) {
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -51,24 +37,24 @@ fun FillterScreen(navController: NavController,uri: String?) {
     ){
         Column {
             var colorFilter by remember { mutableStateOf<ColorFilter?>(null) }
-
-            if(capturedImageUri.path?.isNotEmpty() == true) {
-                Image(
-                    painter = rememberImagePainter(capturedImageUri),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f),
-                    contentScale = ContentScale.Crop,
-                    colorFilter = colorFilter
-                )
-            }
-            else {
-                Image(
-                    painter = painterResource(id = R.drawable.insert_img) ,
-                    contentDescription = "Insert Image"
-                )
-            }
+//
+//            if(capturedImageUri.path?.isNotEmpty() == true) {
+//                Image(
+//                    painter = rememberImagePainter(capturedImageUri),
+//                    contentDescription = null,
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .aspectRatio(1f),
+//                    contentScale = ContentScale.Crop,
+//                    colorFilter = colorFilter
+//                )
+//            }
+//            else {
+//                Image(
+//                    painter = painterResource(id = R.drawable.insert_img) ,
+//                    contentDescription = "Insert Image"
+//                )
+//            }
 
             Row (
                 modifier = Modifier
@@ -77,8 +63,6 @@ fun FillterScreen(navController: NavController,uri: String?) {
                 ,
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.Bottom
-
-
             )
             {
 
@@ -137,12 +121,6 @@ fun FillterScreen(navController: NavController,uri: String?) {
         }
     }
 
-}
-
-private fun encodeUri(uriString: String): String {
-    val uri = Uri.parse(uriString)
-    val encodedUriString = Uri.encode(uri.lastPathSegment)
-    return uriString.replace(uri.lastPathSegment ?: "", encodedUriString)
 }
 
 

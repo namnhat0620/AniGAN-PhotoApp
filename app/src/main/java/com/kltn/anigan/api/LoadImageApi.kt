@@ -7,7 +7,7 @@ import com.google.gson.JsonDeserializer
 import com.google.gson.JsonElement
 import com.google.gson.JsonParseException
 import com.kltn.anigan.api.BaseURL.BaseURL.BASE_URL
-import com.kltn.anigan.domain.LoadImageResponse
+import com.kltn.anigan.domain.response.LoadImageResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call

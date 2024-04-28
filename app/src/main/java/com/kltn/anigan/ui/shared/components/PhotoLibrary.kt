@@ -1,10 +1,12 @@
 package com.kltn.anigan.ui.shared.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -32,23 +34,28 @@ internal fun PhotoLibrary(
             .padding(vertical = 15.dp)
     ){
         items(itemList, key = { it.image_id }) {
-            GlideImage(
-                model = it.url,
-                failure = placeholder(R.drawable.default_image),
-                contentDescription = null,
-                modifier = modifier
-                    .padding(start = 12.dp)
-                    .size(100.dp)
-                    .clickable {
-                        chosenItemIndex = it.image_id
-                        if (setReferenceImageUrl != null) {
-                            setReferenceImageUrl(it.url.toString())
+            if(it.url.isNotEmpty()) {
+                GlideImage(
+                    model = it.url,
+                    failure = placeholder(R.drawable.default_image),
+                    contentDescription = null,
+                    modifier = modifier
+                        .padding(start = 12.dp)
+                        .size(100.dp)
+                        .clickable {
+                            chosenItemIndex = it.image_id
+                            if (setReferenceImageUrl != null) {
+                                setReferenceImageUrl(it.url)
+                            }
                         }
-                    }
-                    .graphicsLayer { alpha = if (it.image_id == chosenItemIndex) 0.5f else 1f }
-            )
+                        .graphicsLayer { alpha = if (it.image_id == chosenItemIndex) 0.5f else 1f }
+                )
+            }
+            else {
+                Box(modifier = modifier.size(100.dp)) {
+                    CircularProgressIndicator()
+                }
+            }
         }
-
     }
-
 }
