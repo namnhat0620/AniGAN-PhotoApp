@@ -10,6 +10,7 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +40,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -51,8 +54,11 @@ import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.enums.ImageType
 import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.domain.request.UploadRequestBody
+import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
+import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
+import com.kltn.anigan.utils.UriUtils.Companion.saveUriToLibrary
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -156,47 +162,16 @@ fun AIResultScreen(
                 CustomButton(
                     drawableId = R.drawable.icon_download,
                     text = "Download",
-                    backgroundColorId = R.color.background_blue
+                    backgroundColorId = R.color.background_blue,
+                    modifier.clickable {
+                        saveImageFromUrl(focusURL)
+                        Toast.makeText(context, "Successfully!", Toast.LENGTH_LONG).show()
+                    }
                 )
             }
             Spacer(modifier = modifier.height(20.dp))
-            com.kltn.anigan.ui.shared.components.ListButton()
+            saveImageFromUrl(focusURL)?.let { ListButton(uri = it, navController = navController){} }
         }
-
-    }
-}
-
-@Composable
-fun Header(
-    navController: NavController,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier
-            .height(50.dp)
-            .fillMaxWidth()
-            .background(colorResource(id = R.color.black)),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.icon_back),
-            contentDescription = "icon_change_image",
-            modifier
-                .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp)
-                .clickable {
-                    navController.popBackStack()
-                },
-        )
-
-        //Icon notification
-        Image(
-            painter = painterResource(id = R.drawable.icon_library),
-            contentDescription = "icon_library",
-            modifier
-                .padding(start = 17.dp, top = 16.dp, end = 12.dp)
-                .size(17.dp)
-        )
 
     }
 }
@@ -304,4 +279,26 @@ private fun ContentResolver.getFileName(capturedImageUri: Uri): String {
     }
 
     return name
+}
+
+@Composable
+private fun Header(navController: NavController) {
+    Row (
+        Modifier
+            .height(50.dp)
+            .fillMaxWidth()
+            .background(colorResource(id = R.color.black)),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.icon_back),
+            contentDescription = "icon_change_image",
+            Modifier
+                .padding(start = 12.dp, top = 16.dp)
+                .size(17.dp)
+                .clickable {
+                    navController.popBackStack()
+                },
+        )
+    }
 }

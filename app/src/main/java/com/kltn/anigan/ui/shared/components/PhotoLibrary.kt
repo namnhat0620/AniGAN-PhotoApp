@@ -40,7 +40,7 @@ internal fun PhotoLibrary(
                     failure = placeholder(R.drawable.default_image),
                     contentDescription = null,
                     modifier = modifier
-                        .padding(start = 12.dp)
+                        .padding(end = 12.dp)
                         .size(100.dp)
                         .clickable {
                             chosenItemIndex = it.image_id

@@ -58,7 +58,7 @@ fun BGRemoverScreen(navController: NavController) {
                 .fillMaxWidth()
                 .aspectRatio(1f) )
 
-            ListButton()
+//            ListButton()
         }
     }
 

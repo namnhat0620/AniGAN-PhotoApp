@@ -25,10 +25,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
@@ -44,7 +47,7 @@ import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun MainScreen(navController: NavController) {
+fun MainScreen(navController: NavController?) {
     var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var capturedImageUri by remember {
@@ -64,6 +67,7 @@ fun MainScreen(navController: NavController) {
         modifier = Modifier
             .background(colorResource(id = R.color.black))
             .fillMaxSize()
+            .padding(horizontal = 12.dp)
     ){
         Column(
             modifier = Modifier
@@ -96,24 +100,7 @@ private fun Header(modifier: Modifier = Modifier) {
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
     ){
-        //Icon menu
-        Image(
-            painter = painterResource(id = R.drawable.icon_menu),
-            contentDescription = "icon_menu",
-            modifier
-                .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp),
-            )
-
-        //Icon notification
-        Image(
-            painter = painterResource(id = R.drawable.icon_bell),
-            contentDescription = "icon_menu",
-            modifier
-                .padding(start = 17.dp, top = 16.dp)
-                .size(17.dp)
-        )
-
+        Text(text = "Anigan", fontSize = 25.sp, color = Color.White)
     }
 }
 
@@ -149,7 +136,7 @@ private fun ListButton(modifier: Modifier = Modifier, navController: NavControll
 
     Row (
         modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceAround
+        horizontalArrangement = Arrangement.SpaceBetween
     )
     {
         FuncButton(R.drawable.edit_btn, "Edit",
@@ -184,9 +171,7 @@ private fun Banner(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(id = R.drawable.banner),
         contentDescription = "banner",
-        modifier.padding(
-            horizontal = 12.dp,
-            vertical = 30.dp))
+        modifier.padding(vertical = 30.dp))
 }
 
 private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {

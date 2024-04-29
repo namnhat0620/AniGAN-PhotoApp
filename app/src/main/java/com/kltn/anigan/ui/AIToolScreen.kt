@@ -1,13 +1,9 @@
 package com.kltn.anigan.ui
 
 import android.Manifest
-import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.net.Uri
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,7 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -32,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
@@ -44,17 +41,16 @@ import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.ui.shared.layouts.Header
 import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.BitmapUtils.Companion.rotate90
+import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.Objects
-import kotlin.math.min
 
 @Composable
 fun AIToolScreen(navController: NavController) {
@@ -88,7 +84,6 @@ fun AIToolScreen(navController: NavController) {
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
             )
 //            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
 
@@ -129,10 +124,10 @@ private fun InsertImage(
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
             val bitmap = BitmapUtils.getBitmapFromUri(uri, context) ?: return@rememberLauncherForActivityResult
-            val squareBitmap = createSquareBitmap(bitmap)
 
             // Save squareBitmap to file and get the new URI
-            val newUri = saveBitmapAndGetUri(context, squareBitmap)
+            val bitmapAfterRotate = rotate90(bitmap)
+            val newUri = saveBitmapAndGetUri(context, bitmapAfterRotate)
             if (newUri != null) {
                 // Update capturedImageUri with the new URI
                 setCapturedImageUri(newUri)
@@ -152,6 +147,7 @@ private fun InsertImage(
     Row (
         modifier
             .background(color = colorResource(id = R.color.background_gray))
+            .defaultMinSize(minHeight = 250.dp)
             .clickable {
                 val permissionCheckResult =
                     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
@@ -169,7 +165,7 @@ private fun InsertImage(
             Image(
                 painter = rememberImagePainter(capturedImageUri),
                 contentDescription = null,
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Inside
             )
         }
         else {
@@ -209,56 +205,4 @@ private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Uni
             Log.i("Load Image Response","onFailure: ${t.message}")
         }
     })
-}
-
-// Function to create a square bitmap from a bitmap
-private fun createSquareBitmap(bitmap: Bitmap): Bitmap {
-    val size = min(bitmap.width, bitmap.height)
-    val startX = (bitmap.width - size) / 2
-    val startY = (bitmap.height - size) / 2
-
-    //Rotate 90
-    val matrix = Matrix()
-    matrix.postRotate(90f)
-    return Bitmap.createBitmap(bitmap, startX, startY, size, size, matrix, true)
-}
-
-private fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri? {
-    // Create a file in the cache directory
-    val file = File(context.cacheDir, "image_${System.currentTimeMillis()}.jpg")
-    return try {
-        // Write the bitmap to the file
-        val outputStream: OutputStream = FileOutputStream(file)
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
-        outputStream.flush()
-        outputStream.close()
-
-        // Insert the image into MediaStore to get a content URI
-        val contentValues = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, file.name)
-            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
-            put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
-        }
-        val contentResolver = context.contentResolver
-        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-        // Move the bitmap file to the MediaStore content URI
-        uri?.let {
-            context.contentResolver.openOutputStream(uri)?.use { output ->
-                file.inputStream().use { input ->
-                    input.copyTo(output)
-                }
-            }
-        }
-
-        // Delete the original file
-        file.delete()
-
-        // Return the content URI
-        uri
-    } catch (e: Exception) {
-        e.printStackTrace()
-        null
-    }
 }
