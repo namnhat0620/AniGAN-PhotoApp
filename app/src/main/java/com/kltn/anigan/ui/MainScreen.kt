@@ -3,10 +3,12 @@ package com.kltn.anigan.ui
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,7 +65,7 @@ fun MainScreen(navController: NavController?) {
             .background(colorResource(id = R.color.black))
             .fillMaxSize()
             .padding(horizontal = 12.dp)
-    ){
+    ) {
         Column(
             modifier = Modifier
                 .background(colorResource(id = R.color.black))
@@ -89,27 +91,40 @@ fun MainScreen(navController: NavController?) {
 
 @Composable
 private fun Header(modifier: Modifier = Modifier) {
-    Row (
+    Row(
         modifier
             .height(50.dp)
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
-    ){
+    ) {
         Text(text = "Anigan", fontSize = 25.sp, color = Color.White)
     }
 }
 
 @Composable
-private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
+private fun FuncButton(imageId: Int, text: String, onClick: () -> Unit = {}) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable { onClick() }
+        modifier = Modifier.clickable { onClick() }
     ) {
-        Image(
-            painter = painterResource(id = imageId),
-            contentDescription = "edit_btn",
-            modifier.size(50.dp)
+        Box(
+            Modifier.size(50.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawCircle(
+                    color = Color(0xFF202020), // Circle color
+                    center = center, // Center of the circle
+                    radius = size.width / 2 // Radius of the circle
+                )
+            }
+            Image(
+                painter = painterResource(id = imageId),
+                contentDescription = "edit_btn",
+                Modifier.size(25.dp)
             )
+        }
+
         Text(
             text = text,
             color = colorResource(id = R.color.white),
@@ -119,46 +134,51 @@ private fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, mo
 }
 
 @Composable
-private fun ListButton(modifier: Modifier = Modifier, navController: NavController ?= null) {
+private fun ListButton(navController: NavController? = null) {
+    var route by remember {
+        mutableStateOf(Routes.MAIN_SCREEN)
+    }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
-        onResult = { newUri ->
-            if (newUri != null && navController != null) {
-                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
+        onResult = {
+            it?.let {
+                navController?.navigate("$route?uri=$it")
             }
         }
     )
 
-    Row (
-        modifier.fillMaxWidth(),
+    Row(
+        Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     )
     {
-        FuncButton(R.drawable.edit_btn, "Edit",
+        FuncButton(R.drawable.baseline_add_24, "Edit",
             onClick = {
+                route = Routes.EDIT_SCREEN
                 galleryLauncher.launch("image/*")
-            },
-            modifier = modifier)
-        FuncButton(R.drawable.ai_tool_btn, "AI Tools",
+            })
+        FuncButton(R.drawable.baseline_auto_awesome_24, "AI Tools",
             onClick = {
                 navController?.navigate(Routes.AI_TOOLS.route)
-            },
-            modifier = modifier)
-        FuncButton(R.drawable.collage_btn, "Collage",
+            })
+        FuncButton(R.drawable.baseline_brush_24, "Brush",
             onClick = {
-                navController?.navigate(Routes.COLLAGE_TOOL.route)
-            },
-            modifier = modifier)
-        FuncButton(R.drawable.bg_remove_btn, "Bg\nremover",
+                route = Routes.BRUSH_SCREEN
+                galleryLauncher.launch("image/*")
+            })
+        FuncButton(R.drawable.baseline_text_fields_24, "Text",
             onClick = {
-                navController?.navigate(Routes.BG_REMOVER_TOOL.route)
-            },
-            modifier = modifier)
-        FuncButton(R.drawable.more_btn, "More",
-            modifier = modifier)
+                route = Routes.ADD_TEXT
+                galleryLauncher.launch("image/*")
+            })
+        FuncButton(R.drawable.baseline_auto_fix_high_24, "Filter",
+            onClick = {
+                route = Routes.FILTER_TOOL
+                galleryLauncher.launch("image/*")
+            })
     }
 }
-
 
 
 @Composable
@@ -166,17 +186,18 @@ private fun Banner(modifier: Modifier = Modifier) {
     Image(
         painter = painterResource(id = R.drawable.banner),
         contentDescription = "banner",
-        modifier.padding(vertical = 30.dp))
+        modifier.padding(vertical = 30.dp)
+    )
 }
 
 private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
-    LoadImageApi().getRefImage(type).enqueue(object:
+    LoadImageApi().getRefImage(type).enqueue(object :
         Callback<LoadImageResponse> {
         override fun onResponse(
             call: Call<LoadImageResponse>,
             response: Response<LoadImageResponse>
         ) {
-            if(response.isSuccessful) {
+            if (response.isSuccessful) {
                 response.body()?.let {
                     onImageListLoaded(it.data.list)
                 }
@@ -184,7 +205,7 @@ private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>
         }
 
         override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
-            Log.i("Load Image Response","onFailure: ${t.message}")
+            Log.i("Load Image Response", "onFailure: ${t.message}")
         }
     })
 }

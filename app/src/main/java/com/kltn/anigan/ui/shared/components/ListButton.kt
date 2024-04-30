@@ -31,40 +31,22 @@ import com.yalantis.ucrop.UCrop
 import java.io.File
 
 @Composable
-fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable { onClick() }
-    ) {
-        Image(
-            painter = painterResource(id = imageId),
-            contentDescription = "edit_btn",
-            modifier.size(30.dp)
-        )
-        Text(
-            text = text,
-            color = colorResource(id = R.color.white),
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@Composable
 fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Unit) {
     val context = LocalContext.current
 
-    val cropLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val resultCode = result.resultCode
-        val data = result.data
-        if (resultCode == Activity.RESULT_OK) {
-            val newUri = UCrop.getOutput(data!!)
-            if (newUri != null) {
-                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri&editType=${EditType.DEFAULT.type}")
+    val cropLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val resultCode = result.resultCode
+            val data = result.data
+            if (resultCode == Activity.RESULT_OK) {
+                val newUri = UCrop.getOutput(data!!)
+                if (newUri != null) {
+                    navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri&editType=${EditType.DEFAULT.type}")
+                }
             }
         }
-    }
 
-    Row (
+    Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround,
     )
@@ -73,63 +55,55 @@ fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Un
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
+            FuncButton2(
+                R.drawable.baseline_auto_awesome_24, "AI Tools",
+            ) {
+                navController.navigate(Routes.AI_TOOLS.route)
+            }
+            FuncButton2(
+                R.drawable._crop, "Crop"
+            ) {
+                val destinationFileName = "image_${System.currentTimeMillis()}.jpg"
+                val destinationUri = Uri.fromFile(File(context.cacheDir, destinationFileName))
+                val uCrop = UCrop.of(uri, destinationUri)
+                    .withAspectRatio(16F, 9F)
 
+                val uCropIntent = uCrop.getIntent(context)
+                cropLauncher.launch(uCropIntent)
+                onEditResult(destinationUri)
+            }
             FuncButton2(
-                R.drawable._crop, "Crop",
-                onClick = {
-                    val destinationFileName = "image_${System.currentTimeMillis()}.jpg"
-                    val destinationUri = Uri.fromFile(File(context.cacheDir, destinationFileName))
-                    val uCrop = UCrop.of(uri, destinationUri)
-                        .withAspectRatio(16F, 9F)
-
-                    val uCropIntent = uCrop.getIntent(context)
-                    cropLauncher.launch(uCropIntent)
-                    onEditResult(destinationUri)
-                },
-                modifier = Modifier
-            )
+                R.drawable.baseline_brush_24, "Brush"
+            ) {
+                navController.navigate("${Routes.BRUSH_SCREEN.route}?uri=$uri")
+            }
             FuncButton2(
-                R.drawable.baseline_brush_24, "Brush",
-                modifier = Modifier
-                    .clickable {
-                        navController.navigate("${Routes.BRUSH_SCREEN.route}?uri=$uri")
-                    }
-            )
+                R.drawable.baseline_text_fields_24, "Text"
+            ) {
+                navController.navigate("${Routes.ADD_TEXT.route}?uri=$uri")
+            }
             FuncButton2(
-                R.drawable._text, "Text",
-                modifier = Modifier
-                    .clickable {
-                        navController.navigate("${Routes.ADD_TEXT.route}?uri=$uri")
-                    }
-            )
-            FuncButton2(
-                R.drawable._filter, "Filters",
-                onClick = {
-                    navController.navigate("${Routes.FILTER_TOOL.route}?uri=$uri")
-                },
-                modifier = Modifier
-            )
-            FuncButton2(
-                R.drawable._rotate, "Rotate\nFlip",
-                modifier = Modifier
-            )
+                R.drawable.baseline_auto_fix_high_24, "Filters",
+            ) {
+                navController.navigate("${Routes.FILTER_TOOL.route}?uri=$uri")
+            }
         }
 
     }
 }
 
 @Composable
-private fun FuncButton2(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
+private fun FuncButton2(imageId: Int, text: String, onClick: () -> Unit = {}) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.clickable { onClick() }
+        modifier = Modifier.clickable { onClick() }
     ) {
         Image(
             painter = painterResource(id = imageId),
             contentDescription = "edit_btn",
-            modifier.size(23.dp)
+            Modifier.size(23.dp)
         )
-        Spacer(modifier = modifier.height(5.dp))
+        Spacer(modifier = Modifier.height(5.dp))
         Text(
             text = text,
             color = colorResource(id = R.color.white),

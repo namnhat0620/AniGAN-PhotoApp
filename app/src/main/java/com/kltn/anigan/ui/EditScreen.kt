@@ -2,17 +2,22 @@ package com.kltn.anigan.ui
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,7 +32,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
@@ -36,7 +40,6 @@ import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.utils.UriUtils
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 
-@Preview
 @Composable
 fun EditScreen(
     navController: NavController = NavController(LocalContext.current),
@@ -60,28 +63,28 @@ fun EditScreen(
             navController = navController,
             uri = capturedImageUri,
             fileName = "image_${System.currentTimeMillis()}.jpg"
-        )
+        ) {
+            capturedImageUri = it
+        }
 
-        Column {
-            //Image field
-            if (capturedImageUri.path?.isNotEmpty() == true) {
-                Image(
-                    painter = rememberImagePainter(capturedImageUri),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentScale = ContentScale.Inside,
-                )
-            } else {
-                Image(
-                    painter = painterResource(id = R.drawable.insert_img),
-                    contentDescription = "Insert Image"
-                )
-            }
+        //Image field
+        if (capturedImageUri.path?.isNotEmpty() == true) {
+            Image(
+                painter = rememberImagePainter(capturedImageUri),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxWidth(),
+                contentScale = ContentScale.Inside,
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.insert_img),
+                contentDescription = "Insert Image"
+            )
+        }
 
-            Footer(capturedImageUri, navController) {
-                capturedImageUri = it
-            }
+        Footer(capturedImageUri, navController) {
+            capturedImageUri = it
         }
     }
 }
@@ -91,11 +94,17 @@ private fun Header(
     navController: NavController,
     uri: Uri,
     fileName: String,
-    modifier: Modifier = Modifier
+    onChangeUri: (Uri) -> Unit
 ) {
     val context = LocalContext.current
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = {
+            it?.let { onChangeUri(it) }
+        }
+    )
     Row(
-        modifier
+        Modifier
             .height(50.dp)
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
@@ -104,7 +113,7 @@ private fun Header(
         Image(
             painter = painterResource(id = R.drawable.icon_back),
             contentDescription = "icon_change_image",
-            modifier
+            Modifier
                 .padding(start = 12.dp, top = 16.dp)
                 .size(17.dp)
                 .clickable {
@@ -112,21 +121,41 @@ private fun Header(
                 },
         )
 
-        //Icon notification
-        OutlinedButton(
-            onClick = {
-                UriUtils.saveUriToLibrary(context, uri, fileName)
-                Toast.makeText(context, "Successfully!", Toast.LENGTH_LONG).show()
-            }
+        Row(
+            Modifier.fillMaxHeight(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = "Save", color = Color.White)
-        }
+            Image(
+                painter = painterResource(id = R.drawable.outline_image_24),
+                contentDescription = "icon_change_image",
+                Modifier
+                    .size(30.dp)
+                    .clickable {
+                        galleryLauncher.launch("image/*")
+                    },
+            )
 
+            Spacer(modifier = Modifier.width(20.dp))
+
+            //Icon notification
+            OutlinedButton(
+                onClick = {
+                    UriUtils.saveUriToLibrary(context, uri, fileName)
+                    Toast.makeText(context, "Successfully!", Toast.LENGTH_LONG).show()
+                }
+            ) {
+                Text(text = "Save", color = Color.White)
+            }
+        }
     }
 }
 
 @Composable
-private fun Footer(capturedImageUri: Uri, navController: NavController, onChangeUri: (Uri) -> Unit) {
+private fun Footer(
+    capturedImageUri: Uri,
+    navController: NavController,
+    onChangeUri: (Uri) -> Unit
+) {
     Row(
         Modifier
             .fillMaxSize(),

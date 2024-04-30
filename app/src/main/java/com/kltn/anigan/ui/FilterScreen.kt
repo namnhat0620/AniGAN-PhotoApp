@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,12 +29,12 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.routes.Routes
-import com.kltn.anigan.ui.shared.components.FuncButton
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.applyColorFilter
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
@@ -73,7 +74,7 @@ fun FilterScreen(navController: NavController, uri: String?) {
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
-        ) {
+    ) {
         Canvas(
             modifier = Modifier
                 .clipToBounds()
@@ -89,95 +90,120 @@ fun FilterScreen(navController: NavController, uri: String?) {
         }
 
         bitmap?.let {
-            Footer(navController = navController, bitmap, colorMatrix) {
-                colorMatrix = it
+            Column {
+                Footer(bitmap) {
+                    colorMatrix = it
+                }
+                BaseFooter(navController = navController, bitmap, colorMatrix)
             }
+
         }
     }
+}
 
 
+@Composable
+private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        FuncButton(
+            bitmap, "Black \n& White", ColorMatrix(
+                (floatArrayOf(
+                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
+                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
+                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f
+                ))
+            )
+        ) {
+            onClick(it)
+        }
+
+        FuncButton(
+            bitmap, "Blend", ColorMatrix(
+                floatArrayOf(
+                    0.393f, 0.7689999f, 0.189f, 0f, 0f,
+                    0.349f, 0.6859999f, 0.16799998f, 0f, 0f,
+                    0.272f, 0.5339999f, 0.131f, 0f, 0f,
+                    0f, 0f, 0f, 1f, 0f
+                )
+            )
+        ) {
+            onClick(it)
+        }
+
+        FuncButton(
+            bitmap, "Inverted", ColorMatrix(
+                floatArrayOf(
+                    -1f, 0f, 0f, 0f, 255f,
+                    0f, -1f, 0f, 0f, 255f,
+                    0f, 0f, -1f, 0f, 255f,
+                    0f, 0f, 0f, 1f, 0f
+                )
+            )
+        ) {
+            onClick(it)
+        }
+
+        FuncButton(
+            bitmap, "Contrast", ColorMatrix(
+                floatArrayOf(
+                    2f, 0f, 0f, 0f, -180f,
+                    0f, 2f, 0f, 0f, -180f,
+                    0f, 0f, 2f, 0f, -180f,
+                    0f, 0f, 0f, 1f, 0f
+                )
+            )
+        ) {
+            onClick(it)
+        }
+    }
 }
 
 @Composable
-private fun Footer(
-    navController: NavController,
+private fun FuncButton(
     bitmap: Bitmap,
+    text: String,
     colorMatrix: ColorMatrix,
-    onClick: (ColorMatrix) -> Unit
+    onClick: (ColorMatrix) -> Unit = {}
 ) {
-
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            FuncButton(R.drawable.graphics_bw_1, "Black \n& White",
-                modifier = Modifier
-                    .clickable {
-                        onClick(
-                            ColorMatrix(
-                                (floatArrayOf(
-                                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
-                                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
-                                    0.2126f, 0.7152f, 0.0722f, 0f, 0f,
-                                    0f, 0f, 0f, 1f, 0f
-                                ))
-                            )
-                        )
-                    }
-            )
-            FuncButton(R.drawable.graphics_blendmode_1, "Blend",
-                modifier = Modifier
-                    .clickable {
-                        onClick(
-                            ColorMatrix(
-                                floatArrayOf(
-                                    0.393f, 0.7689999f, 0.189f, 0f, 0f,
-                                    0.349f, 0.6859999f, 0.16799998f, 0f, 0f,
-                                    0.272f, 0.5339999f, 0.131f, 0f, 0f,
-                                    0f,     0f,         0f,          1f, 0f
-                                )
-                            )
-                        )
-                    }
-            )
-            FuncButton(R.drawable.graphics_inverted_1, "Inverted",
-                modifier = Modifier
-                    .clickable {
-                        onClick(
-                            ColorMatrix(
-                                floatArrayOf(
-                                    -1f, 0f, 0f, 0f, 255f,
-                                    0f, -1f, 0f, 0f, 255f,
-                                    0f, 0f, -1f, 0f, 255f,
-                                    0f, 0f, 0f, 1f, 0f
-                                )
-                            )
-                        )
-                    }
-            )
-            FuncButton(R.drawable.graphics_colormatrix_1, "Contrast",
-                modifier = Modifier
-                    .clickable {
-                        val contrast = 2f // 0f..10f (1 should be default)
-                        val brightness = -180f // -255f..255f (0 should be default)
-                        onClick(
-                            ColorMatrix(
-                                floatArrayOf(
-                                    contrast, 0f, 0f, 0f, brightness,
-                                    0f, contrast, 0f, 0f, brightness,
-                                    0f, 0f, contrast, 0f, brightness,
-                                    0f, 0f, 0f, 1f, 0f
-                                )
-                            )
-                        )
-                    }
-            )
-        }
-        BaseFooter(navController = navController, bitmap, colorMatrix)
+    val context = LocalContext.current
+    val croppedSize =
+        BitmapUtils.cropWidthHeight(bitmap.width, bitmap.height, 60.0)
+    val scaledBitmap = bitmap.let {
+        Bitmap.createScaledBitmap(
+            it,
+            croppedSize[0].toInt(),
+            croppedSize[1].toInt(),
+            false
+        )
     }
 
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable { onClick(colorMatrix) }
+    ) {
+        Canvas(
+            modifier = Modifier
+                .clipToBounds()
+                .width(BitmapUtils.dpFromPx(context, croppedSize[0].toFloat()).dp)
+                .height(BitmapUtils.dpFromPx(context, croppedSize[1].toFloat()).dp)
+        ) {
+            val bitmapApplyFilter = applyColorFilter(scaledBitmap, colorMatrix = colorMatrix)
+            drawImage(
+                image = bitmapApplyFilter.asImageBitmap()
+            )
+        }
+        Text(
+            text = text,
+            color = colorResource(id = R.color.white),
+            textAlign = TextAlign.Center
+        )
+    }
 }
+
 
 @Composable
 private fun BaseFooter(

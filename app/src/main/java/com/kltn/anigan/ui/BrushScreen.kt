@@ -30,7 +30,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.RequestDisallowInterceptTouchEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -54,7 +53,6 @@ import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalComposeUiApi::class)
-@Preview
 @Composable
 fun BrushScreen(
     navController: NavController = rememberNavController(),

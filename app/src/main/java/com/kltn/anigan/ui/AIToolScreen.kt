@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +16,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,18 +36,10 @@ import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
-import com.kltn.anigan.api.LoadImageApi
-import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.enums.ImageType
-import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
-import com.kltn.anigan.ui.shared.layouts.Header
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.rotate90
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -58,17 +52,13 @@ fun AIToolScreen(navController: NavController) {
         mutableStateOf<Uri>(Uri.EMPTY)
     }
 
-//    var referenceImageUrl by remember {
-//        mutableStateOf<String?>(null)
-//    }
-
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
             .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column{
+        Column {
             Header(
                 setCapturedImageUri = { newUri ->
                     if (newUri != null) {
@@ -123,7 +113,8 @@ private fun InsertImage(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-            val bitmap = BitmapUtils.getBitmapFromUri(uri, context) ?: return@rememberLauncherForActivityResult
+            val bitmap = BitmapUtils.getBitmapFromUri(uri, context)
+                ?: return@rememberLauncherForActivityResult
 
             // Save squareBitmap to file and get the new URI
             val bitmapAfterRotate = rotate90(bitmap)
@@ -144,7 +135,7 @@ private fun InsertImage(
         }
     }
 
-    Row (
+    Row(
         modifier
             .background(color = colorResource(id = R.color.background_gray))
             .defaultMinSize(minHeight = 250.dp)
@@ -160,17 +151,16 @@ private fun InsertImage(
             },
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-    ){
-        if(capturedImageUri.path?.isNotEmpty() == true) {
+    ) {
+        if (capturedImageUri.path?.isNotEmpty() == true) {
             Image(
                 painter = rememberImagePainter(capturedImageUri),
                 contentDescription = null,
                 contentScale = ContentScale.Inside
             )
-        }
-        else {
+        } else {
             Image(
-                painter = painterResource(id = R.drawable.insert_img) ,
+                painter = painterResource(id = R.drawable.insert_img),
                 contentDescription = "Insert Image"
             )
         }
@@ -188,21 +178,60 @@ fun Context.createImageFile(): File {
     )
 }
 
-private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
-    LoadImageApi().getRefImage(ImageType.REFERENCE_IMAGE.type).enqueue(object: Callback<LoadImageResponse>{
-        override fun onResponse(
-            call: Call<LoadImageResponse>,
-            response: Response<LoadImageResponse>
-        ) {
-            if(response.isSuccessful) {
-                response.body()?.let {
-                    onImageListLoaded(it.data.list)
-                }
-            }
-        }
+//private fun getRefImage(onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
+//    LoadImageApi().getRefImage(ImageType.REFERENCE_IMAGE.type).enqueue(object: Callback<LoadImageResponse>{
+//        override fun onResponse(
+//            call: Call<LoadImageResponse>,
+//            response: Response<LoadImageResponse>
+//        ) {
+//            if(response.isSuccessful) {
+//                response.body()?.let {
+//                    onImageListLoaded(it.data.list)
+//                }
+//            }
+//        }
+//
+//        override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
+//            Log.i("Load Image Response","onFailure: ${t.message}")
+//        }
+//    })
+//}
 
-        override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
-            Log.i("Load Image Response","onFailure: ${t.message}")
-        }
-    })
+@Composable
+private fun Header(
+    setCapturedImageUri: (Uri?) -> Unit,
+    navController: NavController,
+    modifier: Modifier = Modifier
+) {
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+        onResult = { uri ->
+            setCapturedImageUri(uri)
+        })
+
+    Row(
+        modifier
+            .height(50.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 16.dp)
+            .background(colorResource(id = R.color.black)),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.icon_back),
+            contentDescription = "icon_change_image",
+            modifier
+                .size(17.dp)
+                .clickable {
+                    navController.popBackStack()
+                },
+        )
+        Image(
+            painter = painterResource(id = R.drawable.outline_image_24),
+            contentDescription = "icon_change_image",
+            modifier
+                .size(30.dp)
+                .clickable { galleryLauncher.launch("image/*") }
+        )
+    }
 }
