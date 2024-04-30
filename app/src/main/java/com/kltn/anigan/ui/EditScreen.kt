@@ -2,7 +2,6 @@ package com.kltn.anigan.ui
 
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,9 +20,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -33,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
-import com.kltn.anigan.domain.enums.EditType
 import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.utils.UriUtils
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
@@ -43,34 +41,28 @@ import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 fun EditScreen(
     navController: NavController = NavController(LocalContext.current),
     uri: String? = "",
-    editType: String? = EditType.DEFAULT.type
 ) {
-    if(uri.isNullOrEmpty()) return
+    if (uri.isNullOrEmpty()) return
 
     var capturedImageUri by remember {
         mutableStateOf<Uri>(Uri.parse(encodeUri(uri)))
     }
 
-
-    var isDefault by remember {
-        mutableStateOf<Boolean>(EditType.DEFAULT.type == editType)
-    }
-
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
-            .fillMaxWidth(),
-        ) {
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+    ) {
 
         //Header
-        AnimatedVisibility(visible = isDefault) {
-            Header(navController = navController, uri = capturedImageUri, fileName = "image_${System.currentTimeMillis()}.jpg")
-        }
+        Header(
+            navController = navController,
+            uri = capturedImageUri,
+            fileName = "image_${System.currentTimeMillis()}.jpg"
+        )
 
         Column {
-            val colorFilter by remember { mutableStateOf<ColorFilter?>(null) }
-
-
             //Image field
             if (capturedImageUri.path?.isNotEmpty() == true) {
                 Image(
@@ -79,7 +71,6 @@ fun EditScreen(
                     modifier = Modifier
                         .fillMaxWidth(),
                     contentScale = ContentScale.Inside,
-                    colorFilter = colorFilter
                 )
             } else {
                 Image(
@@ -88,19 +79,9 @@ fun EditScreen(
                 )
             }
 
-            //Footer
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Bottom
-            ) {
-                when (editType) {
-                    EditType.DEFAULT.type -> ListButton(uri = capturedImageUri, navController = navController) { newUri ->
-                        capturedImageUri = newUri
-                    }
-                    EditType.FILTER.type -> FillterScreen(navController, capturedImageUri)
-                }
+            Footer(capturedImageUri, navController) {
+                capturedImageUri = it
             }
-
         }
     }
 }
@@ -142,4 +123,18 @@ private fun Header(
         }
 
     }
+}
+
+@Composable
+private fun Footer(capturedImageUri: Uri, navController: NavController, onChangeUri: (Uri) -> Unit) {
+    Row(
+        Modifier
+            .fillMaxSize(),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        ListButton(uri = capturedImageUri, navController = navController) {
+            onChangeUri(it)
+        }
+    }
+
 }

@@ -1,4 +1,4 @@
-package com.kltn.anigan.utils;
+package com.kltn.anigan.utils
 
 import android.content.ContentValues
 import android.content.Context
@@ -105,9 +105,9 @@ class UriUtils {
             // Insert the URI into MediaStore
             val uriInserted = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             uriInserted?.let { outputStream ->
-                contentResolver.openOutputStream(outputStream)?.use { outputStream ->
+                contentResolver.openOutputStream(outputStream)?.use { outputStream2 ->
                     contentResolver.openInputStream(uri)?.use { inputStream ->
-                        inputStream.copyTo(outputStream)
+                        inputStream.copyTo(outputStream2)
                     }
                 }
             }

@@ -10,7 +10,6 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +38,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -52,13 +49,12 @@ import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
 import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.enums.ImageType
-import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.domain.request.UploadRequestBody
+import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
-import com.kltn.anigan.utils.UriUtils.Companion.saveUriToLibrary
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -83,7 +79,6 @@ fun AIResultScreen(
 ) {
     val context = LocalContext.current
     val activity = LocalContext.current as? Activity ?: return // Get the activity from the LocalContext
-    var isLoading by remember { mutableStateOf(false) }
     var resultList by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var focusURL by remember { mutableStateOf("") }
 

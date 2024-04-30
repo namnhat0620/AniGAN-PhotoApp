@@ -1,8 +1,5 @@
-package com.kltn.anigan.ui.shared.layouts
+package com.kltn.anigan.ui.shared.layouts.footers
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,11 +17,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
+import com.kltn.anigan.domain.DocsViewModel
 
 
 @Composable
-fun Footer(
+fun BaseFooter(
     navController: NavController,
+    viewModel: DocsViewModel?,
     modifier: Modifier = Modifier
 ) {
     Row (
@@ -33,7 +32,7 @@ fun Footer(
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Bottom
+        verticalAlignment = Alignment.CenterVertically
     ){
         Image(
             painter = painterResource(id = R.drawable.icon_back),
@@ -42,7 +41,7 @@ fun Footer(
                 .padding(start = 12.dp, top = 16.dp)
                 .size(17.dp)
                 .clickable {
-                           navController.popBackStack()
+                    navController.popBackStack()
                 },
         )
         Row {
@@ -52,7 +51,12 @@ fun Footer(
                 modifier
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
                     .size(17.dp)
-                    .clickable { navController.popBackStack()}
+                    .clickable {
+                        if(viewModel != null) {
+                            viewModel.saveCanvas.value = true
+                        }
+                        navController.popBackStack()
+                    }
             )
 
         }

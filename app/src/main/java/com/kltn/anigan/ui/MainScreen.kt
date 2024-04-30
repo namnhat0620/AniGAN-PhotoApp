@@ -1,6 +1,5 @@
 package com.kltn.anigan.ui
 
-import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -29,14 +28,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.enums.EditType
 import com.kltn.anigan.domain.enums.ImageType
 import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.routes.Routes
@@ -50,9 +47,7 @@ import retrofit2.Response
 fun MainScreen(navController: NavController?) {
     var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
-    var capturedImageUri by remember {
-        mutableStateOf<Uri>(Uri.EMPTY)
-    }
+
     getImage(type = ImageType.USER_IMAGE.type) { updatedList ->
         // Update the contents of the list variable with the data returned from getRefImage
         userImages = updatedList
@@ -129,7 +124,7 @@ private fun ListButton(modifier: Modifier = Modifier, navController: NavControll
         contract = ActivityResultContracts.GetContent(),
         onResult = { newUri ->
             if (newUri != null && navController != null) {
-                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri&editType=${EditType.DEFAULT.type}")
+                navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
             }
         }
     )

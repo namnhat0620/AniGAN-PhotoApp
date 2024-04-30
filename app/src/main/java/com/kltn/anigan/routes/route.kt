@@ -5,8 +5,9 @@ enum class Routes(val route: String) {
     AI_TOOLS("ai_tools"),
     AI_RESULT_SCREEN("edit_screen"),
     EDIT_SCREEN("edit_screen"),
-    FILL_TEXT_TOOL("fill_text_tools"),
+    BRUSH_SCREEN("brush_screen"),
+    ADD_TEXT("add_text"),
     BG_REMOVER_TOOL("bg_remover_tool"),
     COLLAGE_TOOL("collage_tool"),
-    FILLTER_TOOL("fillter_tool")
+    FILTER_TOOL("filter_tool")
 }

@@ -41,32 +41,51 @@ fun AniganNavHost(
             )
         }
         composable(
-            "${Routes.EDIT_SCREEN.route}?uri={uri}&editType={editType}",
+            "${Routes.EDIT_SCREEN.route}?uri={uri}",
             arguments = listOf(
                 navArgument("uri") { type = NavType.StringType },
-                navArgument("editType") { type = NavType.StringType },
             )
         ) {backStackEntry ->
             EditScreen(
                 navController,
                 backStackEntry.arguments?.getString("uri"),
-                backStackEntry.arguments?.getString("editType")
             )
         }
 
         composable(
-            "${Routes.FILL_TEXT_TOOL.route}?uri={uri}",
-            arguments = listOf(navArgument("uri") { type = NavType.StringType })
+            "${Routes.BRUSH_SCREEN.route}?uri={uri}",
+            arguments = listOf(
+                navArgument("uri") { type = NavType.StringType },
+            )
         ) {backStackEntry ->
-            FillTextScreen(navController = navController, uri = backStackEntry.arguments?.getString("uri"))
+            BrushScreen(
+                navController,
+                backStackEntry.arguments?.getString("uri"),
+            )
         }
 
-        composable(Routes.BG_REMOVER_TOOL.route) {
-            BGRemoverScreen(navController)
+        composable(
+            "${Routes.ADD_TEXT.route}?uri={uri}",
+            arguments = listOf(
+                navArgument("uri") { type = NavType.StringType },
+            )
+        ) {backStackEntry ->
+            AddTextScreen(
+                navController,
+                backStackEntry.arguments?.getString("uri"),
+            )
         }
 
-        composable(Routes.COLLAGE_TOOL.route) {
-             CollageScreen(navController)
+        composable(
+            "${Routes.FILTER_TOOL.route}?uri={uri}",
+            arguments = listOf(
+                navArgument("uri") { type = NavType.StringType },
+            )
+        ) {backStackEntry ->
+            FilterScreen(
+                navController,
+                backStackEntry.arguments?.getString("uri"),
+            )
         }
     }
 }

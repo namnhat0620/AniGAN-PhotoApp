@@ -31,7 +31,7 @@ import com.yalantis.ucrop.UCrop
 import java.io.File
 
 @Composable
-public fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
+fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, modifier: Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.clickable { onClick() }
@@ -52,7 +52,6 @@ public fun FuncButton(imageId: Int, text: String,  onClick: () -> Unit = {}, mod
 @Composable
 fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Unit) {
     val context = LocalContext.current
-    val activity = context as Activity
 
     val cropLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val resultCode = result.resultCode
@@ -85,21 +84,28 @@ fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Un
 
                     val uCropIntent = uCrop.getIntent(context)
                     cropLauncher.launch(uCropIntent)
+                    onEditResult(destinationUri)
                 },
                 modifier = Modifier
             )
             FuncButton2(
-                R.drawable._text, "Text",
+                R.drawable.baseline_brush_24, "Brush",
                 modifier = Modifier
+                    .clickable {
+                        navController.navigate("${Routes.BRUSH_SCREEN.route}?uri=$uri")
+                    }
             )
             FuncButton2(
-                R.drawable._emoji, "Emoji",
+                R.drawable._text, "Text",
                 modifier = Modifier
+                    .clickable {
+                        navController.navigate("${Routes.ADD_TEXT.route}?uri=$uri")
+                    }
             )
             FuncButton2(
                 R.drawable._filter, "Filters",
                 onClick = {
-                    navController.navigate(Routes.FILLTER_TOOL.route)
+                    navController.navigate("${Routes.FILTER_TOOL.route}?uri=$uri")
                 },
                 modifier = Modifier
             )
