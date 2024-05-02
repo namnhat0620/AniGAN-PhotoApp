@@ -19,8 +19,11 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -79,6 +82,7 @@ fun BrushScreen(
     val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
     scrollPermit.invoke(viewModel.canvasEdit.value)
     val scope = rememberCoroutineScope()
+    var isSaved by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -115,8 +119,10 @@ fun BrushScreen(
                 update = {
                     it.bitmap = bitmap
                     viewModel.undoCanvas.value = false
-                    if (viewModel.saveCanvas.value && bitmap != null && !it.path.isEmpty) {
+                    if (viewModel.saveCanvas.value && bitmap != null && !it.path.isEmpty && !isSaved) {
+                        isSaved = true
                         scope.launch {
+                            viewModel.saveCanvas.value = false
                             val drawBitmap = generateBitmap(it, it.width, it.height)
                             val scaledBitmap2 = Bitmap.createScaledBitmap(
                                 drawBitmap,
@@ -129,7 +135,6 @@ fun BrushScreen(
 
                             val newUri =
                                 saveBitmapAndGetUri(context, combinedBitmap) ?: Uri.EMPTY
-                            viewModel.saveCanvas.value = false
                             navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
                         }
                     }

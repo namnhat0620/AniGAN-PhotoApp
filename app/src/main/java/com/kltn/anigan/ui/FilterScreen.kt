@@ -56,6 +56,7 @@ fun FilterScreen(navController: NavController, uri: String?) {
     viewModel.x.floatValue =
         (croppedSize[0].toInt() / 2).toFloat() - viewModel.textSize.floatValue * 3
     viewModel.y.floatValue = (croppedSize[1].toInt() / 2).toFloat()
+    viewModel.bitmap.value = bitmap
     val scaledBitmap = bitmap?.let {
         Bitmap.createScaledBitmap(
             it,
@@ -65,9 +66,6 @@ fun FilterScreen(navController: NavController, uri: String?) {
         )
     }
 
-    var colorMatrix by remember {
-        mutableStateOf(ColorMatrix())
-    }
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -82,34 +80,32 @@ fun FilterScreen(navController: NavController, uri: String?) {
                 .height(BitmapUtils.dpFromPx(context, croppedSize[1].toFloat()).dp)
         ) {
             scaledBitmap?.let {
-                val bitmapApplyFilter = applyColorFilter(it, colorMatrix = colorMatrix)
+                val bitmapApplyFilter =
+                    applyColorFilter(it, colorMatrix = viewModel.colorMatrix.value)
                 drawImage(
                     image = bitmapApplyFilter.asImageBitmap()
                 )
             }
         }
 
-        bitmap?.let {
-            Column {
-                Footer(bitmap) {
-                    colorMatrix = it
-                }
-                BaseFooter(navController = navController, bitmap, colorMatrix)
-            }
-
+        Column {
+            Footer(viewModel)
+            BaseFooter(navController = navController, viewModel)
         }
+
+
     }
 }
 
 
 @Composable
-private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
+private fun Footer(viewModel: DocsViewModel) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         FuncButton(
-            bitmap, "Black \n& White", ColorMatrix(
+            viewModel, "Black \n& White", ColorMatrix(
                 (floatArrayOf(
                     0.2126f, 0.7152f, 0.0722f, 0f, 0f,
                     0.2126f, 0.7152f, 0.0722f, 0f, 0f,
@@ -117,12 +113,10 @@ private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
                     0f, 0f, 0f, 1f, 0f
                 ))
             )
-        ) {
-            onClick(it)
-        }
+        )
 
         FuncButton(
-            bitmap, "Blend", ColorMatrix(
+            viewModel, "Blend", ColorMatrix(
                 floatArrayOf(
                     0.393f, 0.7689999f, 0.189f, 0f, 0f,
                     0.349f, 0.6859999f, 0.16799998f, 0f, 0f,
@@ -130,12 +124,10 @@ private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
                     0f, 0f, 0f, 1f, 0f
                 )
             )
-        ) {
-            onClick(it)
-        }
+        )
 
         FuncButton(
-            bitmap, "Inverted", ColorMatrix(
+            viewModel, "Inverted", ColorMatrix(
                 floatArrayOf(
                     -1f, 0f, 0f, 0f, 255f,
                     0f, -1f, 0f, 0f, 255f,
@@ -143,12 +135,10 @@ private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
                     0f, 0f, 0f, 1f, 0f
                 )
             )
-        ) {
-            onClick(it)
-        }
+        )
 
         FuncButton(
-            bitmap, "Contrast", ColorMatrix(
+            viewModel, "Contrast", ColorMatrix(
                 floatArrayOf(
                     2f, 0f, 0f, 0f, -180f,
                     0f, 2f, 0f, 0f, -180f,
@@ -156,23 +146,21 @@ private fun Footer(bitmap: Bitmap, onClick: (ColorMatrix) -> Unit) {
                     0f, 0f, 0f, 1f, 0f
                 )
             )
-        ) {
-            onClick(it)
-        }
+        )
     }
 }
 
 @Composable
 private fun FuncButton(
-    bitmap: Bitmap,
+    viewModel: DocsViewModel,
     text: String,
-    colorMatrix: ColorMatrix,
-    onClick: (ColorMatrix) -> Unit = {}
+    colorMatrix: ColorMatrix
 ) {
     val context = LocalContext.current
+    val bitmap = viewModel.bitmap.value
     val croppedSize =
-        BitmapUtils.cropWidthHeight(bitmap.width, bitmap.height, 100.0)
-    val scaledBitmap = bitmap.let {
+        BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, 100.0)
+    val scaledBitmap = bitmap?.let {
         Bitmap.createScaledBitmap(
             it,
             croppedSize[0].toInt(),
@@ -183,7 +171,7 @@ private fun FuncButton(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick(colorMatrix) }
+        modifier = Modifier.clickable { viewModel.colorMatrix.value = colorMatrix }
     ) {
         Canvas(
             modifier = Modifier
@@ -191,10 +179,13 @@ private fun FuncButton(
                 .width(BitmapUtils.dpFromPx(context, croppedSize[0].toFloat()).dp)
                 .height(BitmapUtils.dpFromPx(context, croppedSize[1].toFloat()).dp)
         ) {
-            val bitmapApplyFilter = applyColorFilter(scaledBitmap, colorMatrix = colorMatrix)
-            drawImage(
-                image = bitmapApplyFilter.asImageBitmap()
-            )
+            val bitmapApplyFilter =
+                scaledBitmap?.let { applyColorFilter(it, colorMatrix = colorMatrix) }
+            if (bitmapApplyFilter != null) {
+                drawImage(
+                    image = bitmapApplyFilter.asImageBitmap()
+                )
+            }
         }
         Text(
             text = text,
@@ -208,10 +199,13 @@ private fun FuncButton(
 @Composable
 private fun BaseFooter(
     navController: NavController,
-    bitmap: Bitmap,
-    colorMatrix: ColorMatrix
+    viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
+    val bitmap = viewModel.bitmap.value ?: return
+    val colorMatrix = viewModel.colorMatrix.value
+    var isSaved by remember { mutableStateOf(false) }
+
     Row(
         Modifier
             .height(50.dp)
@@ -238,9 +232,12 @@ private fun BaseFooter(
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
                     .size(17.dp)
                     .clickable {
-                        val bitmapAppliedFilter = applyColorFilter(bitmap, colorMatrix)
-                        val uriAppliedFilter = saveBitmapAndGetUri(context, bitmapAppliedFilter)
-                        navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$uriAppliedFilter")
+                        if (!isSaved) {
+                            val bitmapAppliedFilter = applyColorFilter(bitmap, colorMatrix)
+                            val uriAppliedFilter = saveBitmapAndGetUri(context, bitmapAppliedFilter)
+                            navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$uriAppliedFilter")
+
+                        }
                     }
             )
         }

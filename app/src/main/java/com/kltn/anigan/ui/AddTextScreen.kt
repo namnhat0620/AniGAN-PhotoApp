@@ -20,8 +20,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -81,6 +84,7 @@ fun AddTextScreen(
     val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
     scrollPermit.invoke(viewModel.canvasEdit.value)
     val scope = rememberCoroutineScope()
+    var isSaved by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -117,8 +121,9 @@ fun AddTextScreen(
                 update = {
                     it.bitmap = bitmap
                     viewModel.undoCanvas.value = false
-                    if (viewModel.saveCanvas.value && bitmap != null && viewModel.text.value.isNotEmpty()) {
+                    if (viewModel.saveCanvas.value && bitmap != null && viewModel.text.value.isNotEmpty() && !isSaved) {
                         scope.launch {
+                            viewModel.saveCanvas.value = false
                             val drawBitmap = generateBitmap(it, it.width, it.height)
                             val scaledBitmap2 = Bitmap.createScaledBitmap(
                                 drawBitmap,
@@ -131,7 +136,6 @@ fun AddTextScreen(
 
                             val newUri =
                                 saveBitmapAndGetUri(context, combinedBitmap) ?: Uri.EMPTY
-                            viewModel.saveCanvas.value = false
                             navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
                         }
                     }
@@ -157,7 +161,10 @@ private fun Footer(
     ) {
         TextField(value = viewModel.text.value, onValueChange = {
             viewModel.text.value = it
-        })
+        }, modifier = Modifier
+            .fillMaxWidth()
+            .background(colorResource(id = R.color.background_gray)))
+        Spacer(Modifier.height(12.dp))
         Text(text = "Text Size", color = Color.White)
         Slider(value = viewModel.textSize.floatValue, valueRange = 0f..200f, onValueChange = {
             viewModel.textSize.floatValue = it

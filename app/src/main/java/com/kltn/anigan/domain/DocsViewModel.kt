@@ -1,5 +1,7 @@
 package com.kltn.anigan.domain
 
+import android.graphics.Bitmap
+import android.graphics.ColorMatrix
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -23,4 +25,8 @@ class DocsViewModel {
     var x = mutableFloatStateOf(0f)
     var y = mutableFloatStateOf(0f)
     var textSize = mutableFloatStateOf(50f)
+
+    // For add filter
+    var bitmap = mutableStateOf<Bitmap?>(null)
+    var colorMatrix = mutableStateOf(ColorMatrix())
 }
