@@ -1,7 +1,9 @@
 package com.kltn.anigan.domain.response
 
+import com.kltn.anigan.domain.ImageClassFromInternet
+
 data class TransformResponse(
-    val image_id: Int,
-    val url: String,
-    val type: Int
+    val statusCode: Int,
+    val message: String,
+    val data: ImageClassFromInternet
 )

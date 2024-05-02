@@ -1,13 +1,12 @@
 package com.kltn.anigan.ui
 
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.ContentResolver
 import android.content.Context
-import android.graphics.Bitmap
-import android.net.Uri
-import android.provider.OpenableColumns
+import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,36 +39,28 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
-import com.facebook.share.model.SharePhoto
-import com.facebook.share.model.SharePhotoContent
-import com.facebook.share.widget.ShareDialog
 import com.kltn.anigan.R
-import com.kltn.anigan.api.UploadApi
+import com.kltn.anigan.api.TransformApi
 import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.enums.ImageType
-import com.kltn.anigan.domain.request.UploadRequestBody
+import com.kltn.anigan.domain.request.TransformRequest
 import com.kltn.anigan.domain.response.TransformResponse
-import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
-import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
-@OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun AIResultScreen(
     navController: NavController,
@@ -78,32 +69,30 @@ fun AIResultScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val activity = LocalContext.current as? Activity ?: return // Get the activity from the LocalContext
     var resultList by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var focusURL by remember { mutableStateOf("") }
+    val shareImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){}
 
     Column(
         modifier.background(Color.Black)
     ) {
         Header(navController = navController)
 
-        if(num == null || uri == null) return
+        if (num == null || uri == null) return
         LaunchedEffect(Unit) {
-            for (i in 0..<num) {
-                generateImage(Uri.parse(uri), i, context) { transformResponse ->
-                    resultList += ImageClassFromInternet(
-                        transformResponse.image_id,
-                        transformResponse.url,
-                        ImageType.ANIGAN_IMAGE.type
-                    )
-                    if(resultList.size == 1) {
-                        focusURL = resultList[0].url
-                    }
-                }
+            transformImage(uri, context) {
+//                    resultList += ImageClassFromInternet(
+//                        it.image_id,
+//                        it.url,
+//                        ImageType.ANIGAN_IMAGE.type
+//                    )
+//                    if(resultList.size == 1) {
+                focusURL = it.url
+//                    }
             }
         }
 
-        if(focusURL.isNotEmpty()) {
+        if (focusURL.isNotEmpty()) {
             Image(
                 painter = rememberImagePainter(focusURL),
                 contentDescription = null,
@@ -112,11 +101,11 @@ fun AIResultScreen(
                     .fillMaxWidth()
                     .height(350.dp)
             )
-        }
-        else {
-            Row(modifier = Modifier
-                .fillMaxWidth()
-                .height(350.dp),
+        } else {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(350.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -145,12 +134,13 @@ fun AIResultScreen(
                     modifier = modifier.clickable(
                         enabled = focusURL.isNotEmpty()
                     ) {
-                        GlobalScope.launch(Dispatchers.Main) {
-                            val bitmap = getBitmapFromUrl(focusURL, context) ?: return@launch
-                            // Use the bitmap here on the main UI thread
-                            val sharePhotoContent = sharePhotoFB(bitmap)
-                            ShareDialog.show(activity, sharePhotoContent)
-                        }
+//                        GlobalScope.launch(Dispatchers.Main) {
+//                            val bitmap = getBitmapFromUrl(focusURL, context) ?: return@launch
+//                            // Use the bitmap here on the main UI thread
+//                            val sharePhotoContent = sharePhotoFB(bitmap)
+//                            ShareDialog.show(activity, sharePhotoContent)
+//                        }
+                        onShareButtonClick(context, shareImageLauncher, focusURL)
                     }
                 )
                 Spacer(modifier = modifier.width(10.dp))
@@ -165,9 +155,7 @@ fun AIResultScreen(
                 )
             }
             Spacer(modifier = modifier.height(20.dp))
-            saveImageFromUrl(focusURL)?.let { ListButton(uri = it, navController = navController){} }
         }
-
     }
 }
 
@@ -182,8 +170,7 @@ fun CustomButton(
         onClick = { /*TODO*/ },
         modifier
             .width(160.dp)
-            .height(46.dp)
-        ,
+            .height(46.dp),
         colors = ButtonDefaults.buttonColors(colorResource(id = backgroundColorId))
     ) {
         Row(
@@ -202,83 +189,9 @@ fun CustomButton(
     }
 }
 
-private fun sharePhotoFB(image: Bitmap): SharePhotoContent {
-    val photo = SharePhoto.Builder()
-        .setBitmap(image)
-        .build()
-    return SharePhotoContent.Builder()
-        .addPhoto(photo)
-        .build()
-}
-
-
-@SuppressLint("Recycle")
-private fun generateImage(
-    capturedImageUri: Uri,
-    modelId: Int,
-    context: Context,
-    setImageFromResponse: (TransformResponse) -> Unit
-    ) {
-    if (capturedImageUri == Uri.EMPTY) {
-        Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
-        return
-    }
-
-    val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
-        capturedImageUri, "r", null
-    ) ?: return
-
-    val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
-    val file = File(
-        context.cacheDir,
-        context.contentResolver.getFileName(capturedImageUri)
-    )
-    val outputStream = FileOutputStream(file)
-    inputStream.copyTo(outputStream)
-
-    val body = UploadRequestBody(file, "image")
-    UploadApi().uploadImage(
-        MultipartBody.Part.createFormData(
-            "file",
-            file.name,
-            body
-        ),
-        modelId.toString().toRequestBody("text/plain".toMediaTypeOrNull()),
-        "".toRequestBody("text/plain".toMediaTypeOrNull()),
-    ).enqueue(object : Callback<TransformResponse> {
-        override fun onResponse(
-            call: Call<TransformResponse>,
-            response: Response<TransformResponse>
-        ) {
-            response.body()?.let {
-                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                setImageFromResponse(it)
-            }
-        }
-
-        override fun onFailure(call: Call<TransformResponse>, t: Throwable) {
-            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
-                .show()
-        }
-    })
-}
-
-private fun ContentResolver.getFileName(capturedImageUri: Uri): String {
-    var name = ""
-    val returnCursor = this.query(capturedImageUri, null, null, null, null)
-    if (returnCursor != null) {
-        val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        returnCursor.moveToFirst()
-        name = returnCursor.getString(nameIndex)
-        returnCursor.close()
-    }
-
-    return name
-}
-
 @Composable
 private fun Header(navController: NavController) {
-    Row (
+    Row(
         Modifier
             .height(50.dp)
             .fillMaxWidth()
@@ -296,4 +209,97 @@ private fun Header(navController: NavController) {
                 },
         )
     }
+}
+
+@SuppressLint("Recycle")
+private fun transformImage(
+    url: String,
+    context: Context,
+    setImageFromResponse: (ImageClassFromInternet) -> Unit
+) {
+    TransformApi().transformImage(
+        TransformRequest(sourceImg = url)
+    ).enqueue(object : Callback<TransformResponse> {
+        override fun onResponse(
+            call: Call<TransformResponse>,
+            response: Response<TransformResponse>
+        ) {
+            response.body()?.let {
+                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                setImageFromResponse(it.data)
+            }
+        }
+
+        override fun onFailure(call: Call<TransformResponse>, t: Throwable) {
+            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                .show()
+        }
+    })
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+private fun onShareButtonClick(
+    context: Context,
+    shareImageLauncher: ActivityResultLauncher<Intent>,
+    imageUrl: String
+) {
+    GlobalScope.launch(Dispatchers.IO) {
+        try {
+            // Download the image and save it to a file
+            val imagePath = saveImageFromUrl(context, imageUrl)
+
+            // Share the image
+            shareImage(context, shareImageLauncher, imagePath)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
+
+private fun saveImageFromUrl(context: Context, imageUrl: String): String {
+    val url = URL(imageUrl)
+
+    // Create a directory for saving the image
+    val directory = File(context.externalCacheDir, "")
+    if (!directory.exists()) {
+        directory.mkdirs()
+    }
+
+    // Extract the filename from the URL
+    val filename = imageUrl.substringAfterLast("/")
+
+    // Build the path to save the image
+    val savePath = File(directory, filename)
+
+    val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+    connection.doInput = true
+    connection.connect()
+    val input = connection.inputStream
+
+    val fileOutputStream = FileOutputStream(savePath)
+
+    val buffer = ByteArray(1024)
+    var bytesRead: Int
+    while (input.read(buffer).also { bytesRead = it } != -1) {
+        fileOutputStream.write(buffer, 0, bytesRead)
+    }
+
+    fileOutputStream.flush()
+    fileOutputStream.close()
+    input.close()
+
+    return savePath.absolutePath
+}
+
+private fun shareImage(context: Context, shareImageLauncher: ActivityResultLauncher<Intent>, imagePath: String) {
+    val imageFile = File(imagePath)
+    val imageUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "image/*"
+        putExtra(Intent.EXTRA_STREAM, imageUri)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    val chooser = Intent.createChooser(shareIntent, "Share Image")
+    shareImageLauncher.launch(chooser)
 }

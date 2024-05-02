@@ -1,24 +1,19 @@
 package com.kltn.anigan.ui.shared.components
 
 import android.annotation.SuppressLint
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -83,48 +78,41 @@ private fun NumOfGeneration(
 @SuppressLint("Recycle")
 @Composable
 fun GenerateSetting(
-    capturedImageUri: Uri,
+    capturedImageUri: String,
     referenceImageUrl: String?,
+    isLoading: Boolean,
     navController: NavController
 ) {
     var numOfGenerations by remember { mutableIntStateOf(1) }
     val context = LocalContext.current
-    var isLoading by remember { mutableStateOf(false) }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        NumOfGeneration(
-            numOfGenerations,
-            onNumOfGenerationsChanged = { newValue ->
-                numOfGenerations = newValue
+//        NumOfGeneration(
+//            numOfGenerations,
+//            onNumOfGenerationsChanged = { newValue ->
+//                numOfGenerations = newValue
+//            }
+//        )
+//        Spacer(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .height(20.dp)
+//        )
+        GradientButton(
+            gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
+            cornerRadius = 16.dp,
+            nameButton = "Generate Now!",
+            roundedCornerShape = RoundedCornerShape(size = 30.dp),
+            isLoading,
+            onClick = {
+                navController.navigate("${Routes.AI_RESULT_SCREEN.route}?numGenerations=$numOfGenerations&userUri=$capturedImageUri")
             }
         )
-        Spacer(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(20.dp)
-        )
-        if (!isLoading) {
-            GradientButton(
-                gradientColors = listOf(Color(0xFF00FFF0), Color(0xFF00FF66)),
-                cornerRadius = 16.dp,
-                nameButton = "Generate Now!",
-                roundedCornerShape = RoundedCornerShape(size = 30.dp),
-                onClick = {
-                    navController.navigate("${Routes.AI_RESULT_SCREEN.route}?numGenerations=$numOfGenerations&userUri=$capturedImageUri")
-                }
-            )
-            Text(
-                text = "Every creation consumes $numOfGenerations credits.",
-                color = Color.Gray
-            )
-        } else {
-            CircularProgressIndicator()
-            Text(
-                text = "Waiting for less than 1 minute.",
-                color = Color.Gray
-            )
-        }
+//        Text(
+//            text = "Every creation consumes $numOfGenerations credits.",
+//            color = Color.Gray
+//        )
     }
 }

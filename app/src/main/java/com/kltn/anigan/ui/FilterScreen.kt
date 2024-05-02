@@ -171,7 +171,7 @@ private fun FuncButton(
 ) {
     val context = LocalContext.current
     val croppedSize =
-        BitmapUtils.cropWidthHeight(bitmap.width, bitmap.height, 60.0)
+        BitmapUtils.cropWidthHeight(bitmap.width, bitmap.height, 100.0)
     val scaledBitmap = bitmap.let {
         Bitmap.createScaledBitmap(
             it,

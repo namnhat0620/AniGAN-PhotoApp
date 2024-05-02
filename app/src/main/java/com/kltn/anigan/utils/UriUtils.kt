@@ -1,14 +1,16 @@
 package com.kltn.anigan.utils
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.MediaStore
-import java.io.BufferedInputStream
+import android.provider.OpenableColumns
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
+import java.net.HttpURLConnection
 import java.net.URL
 
 class UriUtils {
@@ -21,7 +23,13 @@ class UriUtils {
             return uriString.replace(uri.lastPathSegment ?: "", encodedUriString)
         }
 
-        fun saveImageFromUrl(url: String): Uri? {
+        fun saveImageFromUrl(imageUrl: String): Uri? {
+            val url = URL(imageUrl)
+            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+            connection.doInput = true
+            connection.connect()
+            val input = connection.inputStream
+
             val saveDirectory = "image_${System.currentTimeMillis()}.jpg"
             val directory = File(saveDirectory)
             if (!directory.exists()) {
@@ -30,22 +38,21 @@ class UriUtils {
 
             try {
                 // Extract the filename from the URL
-                val filename = url.substringAfterLast("/")
+                val filename = imageUrl.substringAfterLast("/")
 
                 // Build the path to save the image
                 val savePath = File(saveDirectory, filename)
 
                 // Download the image from the URL
-                BufferedInputStream(URL(url).openStream()).use { inputStream ->
-                    FileOutputStream(savePath).use { outputStream ->
-                        val data = ByteArray(1024)
-                        var bytesRead = inputStream.read(data)
-                        while (bytesRead != -1) {
-                            outputStream.write(data, 0, bytesRead)
-                            bytesRead = inputStream.read(data)
-                        }
+                FileOutputStream(savePath).use { outputStream ->
+                    val data = ByteArray(1024)
+                    var bytesRead = input.read(data)
+                    while (bytesRead != -1) {
+                        outputStream.write(data, 0, bytesRead)
+                        bytesRead = input.read(data)
                     }
                 }
+
 
                 println("Image saved successfully.")
                 return Uri.fromFile(savePath)
@@ -73,7 +80,10 @@ class UriUtils {
                     put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
                 }
                 val contentResolver = context.contentResolver
-                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                val uri = contentResolver.insert(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
 
                 // Move the bitmap file to the MediaStore content URI
                 uri?.let {
@@ -103,7 +113,8 @@ class UriUtils {
             }
 
             // Insert the URI into MediaStore
-            val uriInserted = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            val uriInserted =
+                contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
             uriInserted?.let { outputStream ->
                 contentResolver.openOutputStream(outputStream)?.use { outputStream2 ->
                     contentResolver.openInputStream(uri)?.use { inputStream ->
@@ -113,5 +124,19 @@ class UriUtils {
             }
             return uriInserted
         }
+
+        fun ContentResolver.getFileName(capturedImageUri: Uri): String {
+            var name = ""
+            val returnCursor = this.query(capturedImageUri, null, null, null, null)
+            if (returnCursor != null) {
+                val nameIndex = returnCursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                returnCursor.moveToFirst()
+                name = returnCursor.getString(nameIndex)
+                returnCursor.close()
+            }
+
+            return name
+        }
+
     }
 }

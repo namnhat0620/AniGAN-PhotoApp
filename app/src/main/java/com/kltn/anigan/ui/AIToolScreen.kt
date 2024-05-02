@@ -1,6 +1,7 @@
 package com.kltn.anigan.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,11 +39,22 @@ import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
+import com.kltn.anigan.api.UploadApi
+import com.kltn.anigan.domain.request.UploadRequestBody
+import com.kltn.anigan.domain.response.UploadUserImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.utils.BitmapUtils
-import com.kltn.anigan.utils.BitmapUtils.Companion.rotate90
+import com.kltn.anigan.utils.UriUtils.Companion.getFileName
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +63,10 @@ import java.util.Objects
 @Composable
 fun AIToolScreen(navController: NavController) {
     var capturedImageUri by remember {
-        mutableStateOf<Uri>(Uri.EMPTY)
+        mutableStateOf("")
+    }
+    var isLoading by remember {
+        mutableStateOf(false)
     }
 
     Column(
@@ -62,7 +79,7 @@ fun AIToolScreen(navController: NavController) {
             Header(
                 setCapturedImageUri = { newUri ->
                     if (newUri != null) {
-                        capturedImageUri = newUri
+//                        capturedImageUri = newUri
                     }
                 },
                 navController
@@ -72,9 +89,10 @@ fun AIToolScreen(navController: NavController) {
                 setCapturedImageUri = { newUri ->
                     capturedImageUri = newUri
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
+                isLoading
+            ) {
+                isLoading = it
+            }
 //            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
 
 //            getRefImage { updatedList ->
@@ -88,22 +106,30 @@ fun AIToolScreen(navController: NavController) {
 //            })
         }
 
-        GenerateSetting(
-            capturedImageUri,
-            "",
-            navController
+        Row (Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp)
         )
-
+        {
+            GenerateSetting(
+                capturedImageUri,
+                "",
+                isLoading,
+                navController
+            )
+        }
     }
 }
 
 @Composable
 private fun InsertImage(
-    capturedImageUri: Uri,
-    setCapturedImageUri: (Uri) -> Unit,
-    modifier: Modifier = Modifier
+    capturedImageUri: String,
+    setCapturedImageUri: (String) -> Unit,
+    isLoading: Boolean,
+    setIsLoading: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
+
     val file = context.createImageFile()
     val uri = FileProvider.getUriForFile(
         Objects.requireNonNull(context),
@@ -117,11 +143,16 @@ private fun InsertImage(
                 ?: return@rememberLauncherForActivityResult
 
             // Save squareBitmap to file and get the new URI
-            val bitmapAfterRotate = rotate90(bitmap)
-            val newUri = saveBitmapAndGetUri(context, bitmapAfterRotate)
+//            val bitmapAfterRotate = rotate90(bitmap)
+            val newUri = saveBitmapAndGetUri(context, bitmap)
             if (newUri != null) {
-                // Update capturedImageUri with the new URI
-                setCapturedImageUri(newUri)
+                // Upload file to server
+                generateImage(newUri, context, setIsLoading = {
+                    setIsLoading(it)
+                }) {
+                    // Update capturedImageUri with the new URI
+                    setCapturedImageUri(it.url)
+                }
             }
         }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -136,9 +167,11 @@ private fun InsertImage(
     }
 
     Row(
-        modifier
+        Modifier
+            .fillMaxWidth()
             .background(color = colorResource(id = R.color.background_gray))
             .defaultMinSize(minHeight = 250.dp)
+            .heightIn(max = 550.dp)
             .clickable {
                 val permissionCheckResult =
                     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
@@ -152,7 +185,9 @@ private fun InsertImage(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (capturedImageUri.path?.isNotEmpty() == true) {
+        if (isLoading) {
+            CircularProgressIndicator()
+        } else if (capturedImageUri.isNotEmpty()) {
             Image(
                 painter = rememberImagePainter(capturedImageUri),
                 contentDescription = null,
@@ -235,3 +270,57 @@ private fun Header(
         )
     }
 }
+
+@SuppressLint("Recycle")
+private fun generateImage(
+    capturedImageUri: Uri,
+    context: Context,
+    setIsLoading: (Boolean) -> Unit,
+    setImageFromResponse: (UploadUserImageResponse) -> Unit
+) {
+    setIsLoading(true)
+    if (capturedImageUri == Uri.EMPTY) {
+        Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
+        return
+    }
+
+    val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
+        capturedImageUri, "r", null
+    ) ?: return
+
+    val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
+    val file = File(
+        context.cacheDir,
+        context.contentResolver.getFileName(capturedImageUri)
+    )
+    val outputStream = FileOutputStream(file)
+    inputStream.copyTo(outputStream)
+
+    val body = UploadRequestBody(file, "image")
+    UploadApi().uploadImage(
+        MultipartBody.Part.createFormData(
+            "file",
+            file.name,
+            body
+        ),
+        "".toRequestBody("text/plain".toMediaTypeOrNull()),
+    ).enqueue(object : Callback<UploadUserImageResponse> {
+        override fun onResponse(
+            call: Call<UploadUserImageResponse>,
+            response: Response<UploadUserImageResponse>
+        ) {
+            response.body()?.let {
+                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                setImageFromResponse(it)
+            }
+            setIsLoading(false)
+        }
+
+        override fun onFailure(call: Call<UploadUserImageResponse>, t: Throwable) {
+            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                .show()
+            setIsLoading(false)
+        }
+    })
+}
+

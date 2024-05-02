@@ -15,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -30,8 +31,10 @@ fun GradientButton(
     cornerRadius: Dp,
     nameButton: String,
     roundedCornerShape: RoundedCornerShape,
+    isLoading: Boolean,
     onClick: () -> Unit = {}
 ) {
+    val alpha = if (isLoading) 0.4f else 1f
     Button(
         modifier = Modifier
             .fillMaxWidth()
@@ -41,14 +44,16 @@ fun GradientButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent
         ),
-        shape = RoundedCornerShape(cornerRadius)
+        shape = RoundedCornerShape(cornerRadius),
+        enabled = !isLoading
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
                     brush = Brush.horizontalGradient(colors = gradientColors),
-                    shape = roundedCornerShape
+                    shape = roundedCornerShape,
+                    alpha = alpha
                 )
                 .clip(roundedCornerShape)
                 .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -60,12 +65,14 @@ fun GradientButton(
                 Text(
                     text = nameButton,
                     fontSize = 20.sp,
-                    color = Color.Black
+                    color = Color.Black,
+                    modifier = Modifier.alpha(alpha)
                 )
                 Image(
                     painter = painterResource(id = R.drawable.red_rocket),
                     contentDescription = null,
-                    modifier = Modifier.size(30.dp))
+                    modifier = Modifier.size(30.dp).alpha(alpha)
+                )
             }
         }
     }
