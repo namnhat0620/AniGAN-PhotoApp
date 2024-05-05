@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
+import com.kltn.anigan.R
 
 class DocsViewModel {
 
@@ -35,4 +36,8 @@ class DocsViewModel {
     var url = mutableStateOf("")
     var resultUrl = mutableStateOf("")
     var isLoading = mutableStateOf(false)
+
+    // For add hair
+    var hairResourceId = mutableIntStateOf(R.drawable.male_3)
+    var hairSizeAlpha = mutableFloatStateOf(30F)
 }

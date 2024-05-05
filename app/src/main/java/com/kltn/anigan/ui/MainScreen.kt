@@ -171,7 +171,7 @@ private fun ListButton(navController: NavController? = null, viewModel: DocsView
             })
         FuncButton(R.drawable.baseline_brush_24, "Brush",
             onClick = {
-                route = Routes.BRUSH_SCREEN
+                route = Routes.HAIR_SCREEN
                 galleryLauncher.launch("image/*")
             })
         FuncButton(R.drawable.baseline_text_fields_24, "Text",

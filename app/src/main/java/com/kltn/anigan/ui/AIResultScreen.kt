@@ -49,6 +49,7 @@ import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.request.TransformRequest
 import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.ui.shared.components.ListButton
+import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
@@ -77,14 +78,18 @@ fun AIResultScreen(
     val isLoading = viewModel.isLoading.value
 
     if (url.isEmpty()) return
-    LaunchedEffect(Unit) {
-        viewModel.isLoading.value = true
-        transformImage(context, viewModel)
+    for (i in 0 until 3) {
+        LaunchedEffect(Unit) {
+            viewModel.isLoading.value = true
+            transformImage(context, viewModel, i) {
+                resultList += it
+            }
+        }
     }
 
     GlobalScope.launch(Dispatchers.IO) {
         try {
-            if(focusURL.isNotEmpty()) {
+            if (focusURL.isNotEmpty()) {
                 viewModel.bitmap.value =
                     getBitmapFromUrl(context = context, urlString = viewModel.resultUrl.value)
             }
@@ -119,16 +124,16 @@ fun AIResultScreen(
             }
         }
 
-//        PhotoLibrary(itemList = resultList) {
-//            focusURL = it
-//        }
+        PhotoLibrary(itemList = resultList) {
+            viewModel.resultUrl.value = it
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
         Column(
             Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.Bottom,
-            ) {
+        ) {
             Column(
                 Modifier.background(colorResource(id = R.color.background_gray))
             ) {
@@ -143,27 +148,31 @@ fun AIResultScreen(
                         text = "Share",
                         backgroundColorId = R.color.background_share_btn,
 
-                        modifier = Modifier.clickable(
-                            enabled = !isLoading
-                        ) {
-                            onShareButtonClick(context, shareImageLauncher, focusURL)
-                        }
-                            .alpha(if(isLoading) 0.4f else 1f)
+                        modifier = Modifier
+                            .clickable(
+                                enabled = !isLoading
+                            ) {
+                                onShareButtonClick(context, shareImageLauncher, focusURL)
+                            }
+                            .alpha(if (isLoading) 0.4f else 1f)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     CustomButton(
                         drawableId = R.drawable.icon_download,
                         text = "Download",
                         backgroundColorId = R.color.background_blue,
-                        Modifier.clickable(
-                            enabled = !isLoading
-                        ) {
-                            GlobalScope.launch(Dispatchers.IO) {
-                                saveBitmapAndGetUri(context, viewModel.bitmap.value!!)
+                        Modifier
+                            .clickable(
+                                enabled = !isLoading
+                            ) {
+                                GlobalScope.launch(Dispatchers.IO) {
+                                    saveBitmapAndGetUri(context, viewModel.bitmap.value!!)
+                                }
+                                Toast
+                                    .makeText(context, "Successfully", Toast.LENGTH_SHORT)
+                                    .show()
                             }
-                            Toast.makeText(context, "Successfully", Toast.LENGTH_SHORT).show()
-                        }
-                            .alpha(if(isLoading) 0.4f else 1f)
+                            .alpha(if (isLoading) 0.4f else 1f)
                     )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
@@ -229,12 +238,14 @@ private fun Header(navController: NavController) {
 @SuppressLint("Recycle")
 private fun transformImage(
     context: Context,
-    viewModel: DocsViewModel
+    viewModel: DocsViewModel,
+    referenceId: Int,
+    onResult: (ImageClassFromInternet) -> Unit
 ) {
     val sourceUrl = viewModel.url.value
 
     TransformApi().transformImage(
-        TransformRequest(sourceImg = sourceUrl)
+        TransformRequest(sourceImg = sourceUrl, referenceId = referenceId)
     ).enqueue(object : Callback<TransformResponse> {
         override fun onResponse(
             call: Call<TransformResponse>,
@@ -242,6 +253,7 @@ private fun transformImage(
         ) {
             response.body()?.let {
                 Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                onResult(it.data)
                 viewModel.resultUrl.value = it.data.url
                 viewModel.isLoading.value = false
             }

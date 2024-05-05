@@ -25,9 +25,9 @@ interface TransformApi {
 
             val client = OkHttpClient.Builder()
                 .addInterceptor(interceptor) // Add the logging interceptor
-                .connectTimeout(1, TimeUnit.MINUTES) // Example: Set connect timeout to 10 seconds
-                .readTimeout(1, TimeUnit.MINUTES) // Example: Set read timeout to 10 seconds
-                .writeTimeout(1, TimeUnit.MINUTES) // Example: Set write timeout to 10 seconds
+                .connectTimeout(1, TimeUnit.HOURS) // Example: Set connect timeout to 10 seconds
+                .readTimeout(1, TimeUnit.HOURS) // Example: Set read timeout to 10 seconds
+                .writeTimeout(1, TimeUnit.HOURS) // Example: Set write timeout to 10 seconds
                 .build()
 
             return Retrofit.Builder()

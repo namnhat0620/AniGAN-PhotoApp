@@ -48,6 +48,9 @@ class BitmapUtils {
             }
         }
 
+        fun getBitmapFromDrawable(context: Context, drawableId: Int): Bitmap {
+            return BitmapFactory.decodeResource(context.resources, drawableId)
+        }
 
         fun getScreenWidth(context: Context): Int {
             val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager

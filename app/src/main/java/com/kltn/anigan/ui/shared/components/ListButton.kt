@@ -80,7 +80,7 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel) {
             FuncButton2(
                 R.drawable.baseline_brush_24, "Brush", isLoading
             ) {
-                navController.navigate(Routes.BRUSH_SCREEN.route)
+                navController.navigate(Routes.HAIR_SCREEN.route)
             }
             FuncButton2(
                 R.drawable.baseline_text_fields_24, "Text", isLoading

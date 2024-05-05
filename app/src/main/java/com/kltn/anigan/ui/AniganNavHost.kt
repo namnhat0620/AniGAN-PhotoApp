@@ -46,6 +46,12 @@ fun AniganNavHost(
         }
 
         composable(
+            Routes.HAIR_SCREEN.route
+        ) {
+            HairScreen(navController, viewModel)
+        }
+
+        composable(
             Routes.ADD_TEXT.route
         ) {
             AddTextScreen(navController, viewModel)
