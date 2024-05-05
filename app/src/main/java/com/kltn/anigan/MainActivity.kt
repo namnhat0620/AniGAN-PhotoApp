@@ -1,8 +1,6 @@
 package com.kltn.anigan
 
 import android.Manifest
-import android.app.Activity
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,19 +8,17 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.compose.rememberNavController
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.ui.AniganNavHost
-import com.kltn.anigan.ui.EditScreen
 import com.kltn.anigan.ui.theme.AniGANTheme
-import com.yalantis.ucrop.UCrop
 
 class MainActivity : ComponentActivity() {
-    private val CAMERA_PERMISSION_REQUEST_CODE = 100
-    private val WRITE_EXTERNAL_STORAGE_REQUEST_CODE = 101
+    private val cameraPermissionRequestCode = 100
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Handle the splash screen transition.
@@ -36,7 +32,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    AniganNavHost()
+                    val viewModel = remember { DocsViewModel() }
+                    AniganNavHost(viewModel = viewModel)
                 }
             }
         }
@@ -51,7 +48,7 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(
                 this,
                 arrayOf(Manifest.permission.CAMERA),
-                CAMERA_PERMISSION_REQUEST_CODE
+                cameraPermissionRequestCode
             )
         }
     }

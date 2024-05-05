@@ -3,11 +3,10 @@ package com.kltn.anigan.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.routes.Routes
 
 @Composable
@@ -15,6 +14,7 @@ fun AniganNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.MAIN_SCREEN.route,
+    viewModel: DocsViewModel
 ) {
 
     NavHost(
@@ -23,69 +23,38 @@ fun AniganNavHost(
         startDestination = startDestination
     ) {
         composable(Routes.MAIN_SCREEN.route) {
-            MainScreen(navController)
+            MainScreen(navController, viewModel)
         }
-        composable(Routes.AI_TOOLS.route) { 
-            AIToolScreen(navController)
-        }
-        composable(
-            "${Routes.AI_RESULT_SCREEN.route}?numGenerations={num}&userUri={userUri}",
-            arguments = listOf(
-                navArgument("num") { type = NavType.IntType },
-                navArgument("userUri") { type = NavType.StringType },
-            )
-        ) {backStackEntry ->
-            AIResultScreen(navController,
-                backStackEntry.arguments?.getInt("num"),
-                backStackEntry.arguments?.getString("userUri")
-            )
+        composable(Routes.AI_TOOLS.route) {
+            AIToolScreen(navController, viewModel)
         }
         composable(
-            "${Routes.EDIT_SCREEN.route}?uri={uri}",
-            arguments = listOf(
-                navArgument("uri") { type = NavType.StringType },
-            )
-        ) {backStackEntry ->
-            EditScreen(
-                navController,
-                backStackEntry.arguments?.getString("uri"),
-            )
+            Routes.AI_RESULT_SCREEN.route
+        ) {
+            AIResultScreen(navController, viewModel)
+        }
+        composable(
+            Routes.EDIT_SCREEN.route,
+        ) {
+            EditScreen(navController, viewModel)
         }
 
         composable(
-            "${Routes.BRUSH_SCREEN.route}?uri={uri}",
-            arguments = listOf(
-                navArgument("uri") { type = NavType.StringType },
-            )
-        ) {backStackEntry ->
-            BrushScreen(
-                navController,
-                backStackEntry.arguments?.getString("uri"),
-            )
+            Routes.BRUSH_SCREEN.route
+        ) {
+            BrushScreen(navController, viewModel)
         }
 
         composable(
-            "${Routes.ADD_TEXT.route}?uri={uri}",
-            arguments = listOf(
-                navArgument("uri") { type = NavType.StringType },
-            )
-        ) {backStackEntry ->
-            AddTextScreen(
-                navController,
-                backStackEntry.arguments?.getString("uri"),
-            )
+            Routes.ADD_TEXT.route
+        ) {
+            AddTextScreen(navController, viewModel)
         }
 
         composable(
-            "${Routes.FILTER_TOOL.route}?uri={uri}",
-            arguments = listOf(
-                navArgument("uri") { type = NavType.StringType },
-            )
-        ) {backStackEntry ->
-            FilterScreen(
-                navController,
-                backStackEntry.arguments?.getString("uri"),
-            )
+            Routes.FILTER_TOOL.route
+        ) {
+            FilterScreen(navController, viewModel)
         }
     }
 }

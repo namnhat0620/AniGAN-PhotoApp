@@ -107,7 +107,7 @@ fun GenerateSetting(
             roundedCornerShape = RoundedCornerShape(size = 30.dp),
             isLoading,
             onClick = {
-                navController.navigate("${Routes.AI_RESULT_SCREEN.route}?numGenerations=$numOfGenerations&userUri=$capturedImageUri")
+                navController.navigate(Routes.AI_RESULT_SCREEN.route)
             }
         )
 //        Text(

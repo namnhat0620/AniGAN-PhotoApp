@@ -14,6 +14,8 @@ class DocsViewModel {
     var saveCanvas = mutableStateOf(false)
     val undoCanvas = mutableStateOf(false)
     var canvasEdit = mutableStateOf(true)
+    var uri = mutableStateOf("")
+    var bitmap = mutableStateOf<Bitmap?>(null)
 
     // For add brush
     var brushSize = mutableFloatStateOf(10f)
@@ -27,6 +29,10 @@ class DocsViewModel {
     var textSize = mutableFloatStateOf(50f)
 
     // For add filter
-    var bitmap = mutableStateOf<Bitmap?>(null)
     var colorMatrix = mutableStateOf(ColorMatrix())
+
+    // For AI tools
+    var url = mutableStateOf("")
+    var resultUrl = mutableStateOf("")
+    var isLoading = mutableStateOf(false)
 }

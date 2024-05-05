@@ -1,7 +1,6 @@
 package com.kltn.anigan.ui
 
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -20,11 +19,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -49,10 +45,7 @@ import com.kltn.anigan.ui.shared.layouts.footers.ListColor
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.createSingleImageFromMultipleImages
 import com.kltn.anigan.utils.BitmapUtils.Companion.generateBitmap
-import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
 import com.kltn.anigan.utils.BitmapUtils.Companion.getScreenWidth
-import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
-import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import kotlinx.coroutines.launch
 
 
@@ -60,13 +53,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun AddTextScreen(
     navController: NavController = rememberNavController(),
-    uri: String? = "",
+    viewModel: DocsViewModel
 ) {
-    if (uri.isNullOrEmpty()) return
     val context = LocalContext.current
-    val viewModel = remember { DocsViewModel() }
     val screenWidth = getScreenWidth(context)
-    val bitmap = getBitmapFromUri(Uri.parse(encodeUri(uri)), context)
+    val bitmap = viewModel.bitmap.value
 
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
@@ -84,7 +75,6 @@ fun AddTextScreen(
     val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
     scrollPermit.invoke(viewModel.canvasEdit.value)
     val scope = rememberCoroutineScope()
-    var isSaved by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -121,7 +111,7 @@ fun AddTextScreen(
                 update = {
                     it.bitmap = bitmap
                     viewModel.undoCanvas.value = false
-                    if (viewModel.saveCanvas.value && bitmap != null && viewModel.text.value.isNotEmpty() && !isSaved) {
+                    if (viewModel.saveCanvas.value && bitmap != null && viewModel.text.value.isNotEmpty()) {
                         scope.launch {
                             viewModel.saveCanvas.value = false
                             val drawBitmap = generateBitmap(it, it.width, it.height)
@@ -133,10 +123,9 @@ fun AddTextScreen(
                             )
                             val combinedBitmap =
                                 createSingleImageFromMultipleImages(bitmap, scaledBitmap2)
+                            viewModel.bitmap.value = combinedBitmap
 
-                            val newUri =
-                                saveBitmapAndGetUri(context, combinedBitmap) ?: Uri.EMPTY
-                            navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
+                            navController.navigate(Routes.EDIT_SCREEN.route)
                         }
                     }
                 }

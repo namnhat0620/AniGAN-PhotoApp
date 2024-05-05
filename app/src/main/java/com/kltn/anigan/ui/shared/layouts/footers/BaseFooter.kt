@@ -23,11 +23,10 @@ import com.kltn.anigan.domain.DocsViewModel
 @Composable
 fun BaseFooter(
     navController: NavController,
-    viewModel: DocsViewModel?,
-    modifier: Modifier = Modifier
+    viewModel: DocsViewModel?
 ) {
     Row (
-        modifier
+        Modifier
             .height(50.dp)
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
@@ -37,7 +36,7 @@ fun BaseFooter(
         Image(
             painter = painterResource(id = R.drawable.icon_back),
             contentDescription = "icon_change_image",
-            modifier
+            Modifier
                 .padding(start = 12.dp, top = 16.dp)
                 .size(17.dp)
                 .clickable {
@@ -48,7 +47,7 @@ fun BaseFooter(
             Image(
                 painter = painterResource(id = R.drawable._icon__check_),
                 contentDescription = "icon_change_image",
-                modifier
+                Modifier
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
                     .size(17.dp)
                     .clickable {

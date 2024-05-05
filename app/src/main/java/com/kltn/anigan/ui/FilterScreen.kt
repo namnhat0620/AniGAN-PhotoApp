@@ -2,7 +2,6 @@ package com.kltn.anigan.ui
 
 import android.graphics.Bitmap
 import android.graphics.ColorMatrix
-import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,10 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -37,19 +32,12 @@ import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.applyColorFilter
-import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
-import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
-import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 
 @Composable
-fun FilterScreen(navController: NavController, uri: String?) {
-    if (uri.isNullOrEmpty()) navController.popBackStack()
+fun FilterScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
-    val viewModel = remember { DocsViewModel() }
     val screenWidth = BitmapUtils.getScreenWidth(context)
-    val bitmap = uri?.let {
-        getBitmapFromUri(Uri.parse(encodeUri(uri)), context)
-    }
+    val bitmap = viewModel.bitmap.value
     if (bitmap == null) navController.popBackStack()
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
@@ -201,10 +189,8 @@ private fun BaseFooter(
     navController: NavController,
     viewModel: DocsViewModel
 ) {
-    val context = LocalContext.current
     val bitmap = viewModel.bitmap.value ?: return
     val colorMatrix = viewModel.colorMatrix.value
-    var isSaved by remember { mutableStateOf(false) }
 
     Row(
         Modifier
@@ -232,12 +218,9 @@ private fun BaseFooter(
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
                     .size(17.dp)
                     .clickable {
-                        if (!isSaved) {
                             val bitmapAppliedFilter = applyColorFilter(bitmap, colorMatrix)
-                            val uriAppliedFilter = saveBitmapAndGetUri(context, bitmapAppliedFilter)
-                            navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$uriAppliedFilter")
-
-                        }
+                            viewModel.bitmap.value = bitmapAppliedFilter
+                            navController.navigate(Routes.EDIT_SCREEN.route)
                     }
             )
         }

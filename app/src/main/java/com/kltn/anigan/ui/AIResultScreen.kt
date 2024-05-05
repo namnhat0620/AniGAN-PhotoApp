@@ -32,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -39,16 +40,19 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.TransformApi
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.request.TransformRequest
 import com.kltn.anigan.domain.response.TransformResponse
-import com.kltn.anigan.ui.shared.components.PhotoLibrary
+import com.kltn.anigan.ui.shared.components.ListButton
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
+import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
+import com.kltn.anigan.utils.UriUtils.Companion.shareImage
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -56,41 +60,43 @@ import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.File
-import java.io.FileOutputStream
-import java.net.HttpURLConnection
-import java.net.URL
 
+@SuppressLint("CoroutineCreationDuringComposition")
+@OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun AIResultScreen(
     navController: NavController,
-    num: Int?,
-    uri: String?,
-    modifier: Modifier = Modifier
+    viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
     var resultList by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
-    var focusURL by remember { mutableStateOf("") }
-    val shareImageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){}
+    val focusURL = viewModel.resultUrl.value
+    val shareImageLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
+    val url = viewModel.url.value
+    val isLoading = viewModel.isLoading.value
+
+    if (url.isEmpty()) return
+    LaunchedEffect(Unit) {
+        viewModel.isLoading.value = true
+        transformImage(context, viewModel)
+    }
+
+    GlobalScope.launch(Dispatchers.IO) {
+        try {
+            if(focusURL.isNotEmpty()) {
+                viewModel.bitmap.value =
+                    getBitmapFromUrl(context = context, urlString = viewModel.resultUrl.value)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     Column(
-        modifier.background(Color.Black)
+        Modifier.background(Color.Black)
     ) {
         Header(navController = navController)
-
-        if (num == null || uri == null) return
-        LaunchedEffect(Unit) {
-            transformImage(uri, context) {
-//                    resultList += ImageClassFromInternet(
-//                        it.image_id,
-//                        it.url,
-//                        ImageType.ANIGAN_IMAGE.type
-//                    )
-//                    if(resultList.size == 1) {
-                focusURL = it.url
-//                    }
-            }
-        }
 
         if (focusURL.isNotEmpty()) {
             Image(
@@ -113,48 +119,57 @@ fun AIResultScreen(
             }
         }
 
-        PhotoLibrary(itemList = resultList) {
-            focusURL = it
-        }
+//        PhotoLibrary(itemList = resultList) {
+//            focusURL = it
+//        }
 
-        Spacer(modifier = modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Column(
-            modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Bottom
-        ) {
-            Row(
-                modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
+            Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Bottom,
             ) {
-                CustomButton(
-                    drawableId = R.drawable.icon_share,
-                    text = "Share",
-                    backgroundColorId = R.color.background_gray,
-                    modifier = modifier.clickable(
-                        enabled = focusURL.isNotEmpty()
-                    ) {
-//                        GlobalScope.launch(Dispatchers.Main) {
-//                            val bitmap = getBitmapFromUrl(focusURL, context) ?: return@launch
-//                            // Use the bitmap here on the main UI thread
-//                            val sharePhotoContent = sharePhotoFB(bitmap)
-//                            ShareDialog.show(activity, sharePhotoContent)
-//                        }
-                        onShareButtonClick(context, shareImageLauncher, focusURL)
-                    }
-                )
-                Spacer(modifier = modifier.width(10.dp))
-                CustomButton(
-                    drawableId = R.drawable.icon_download,
-                    text = "Download",
-                    backgroundColorId = R.color.background_blue,
-                    modifier.clickable {
-                        saveImageFromUrl(focusURL)
-                        Toast.makeText(context, "Successfully!", Toast.LENGTH_LONG).show()
-                    }
-                )
+            Column(
+                Modifier.background(colorResource(id = R.color.background_gray))
+            ) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    CustomButton(
+                        drawableId = R.drawable.icon_share,
+                        text = "Share",
+                        backgroundColorId = R.color.background_share_btn,
+
+                        modifier = Modifier.clickable(
+                            enabled = !isLoading
+                        ) {
+                            onShareButtonClick(context, shareImageLauncher, focusURL)
+                        }
+                            .alpha(if(isLoading) 0.4f else 1f)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    CustomButton(
+                        drawableId = R.drawable.icon_download,
+                        text = "Download",
+                        backgroundColorId = R.color.background_blue,
+                        Modifier.clickable(
+                            enabled = !isLoading
+                        ) {
+                            GlobalScope.launch(Dispatchers.IO) {
+                                saveBitmapAndGetUri(context, viewModel.bitmap.value!!)
+                            }
+                            Toast.makeText(context, "Successfully", Toast.LENGTH_SHORT).show()
+                        }
+                            .alpha(if(isLoading) 0.4f else 1f)
+                    )
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                ListButton(navController, viewModel)
+                Spacer(modifier = Modifier.height(20.dp))
             }
-            Spacer(modifier = modifier.height(20.dp))
         }
     }
 }
@@ -213,12 +228,13 @@ private fun Header(navController: NavController) {
 
 @SuppressLint("Recycle")
 private fun transformImage(
-    url: String,
     context: Context,
-    setImageFromResponse: (ImageClassFromInternet) -> Unit
+    viewModel: DocsViewModel
 ) {
+    val sourceUrl = viewModel.url.value
+
     TransformApi().transformImage(
-        TransformRequest(sourceImg = url)
+        TransformRequest(sourceImg = sourceUrl)
     ).enqueue(object : Callback<TransformResponse> {
         override fun onResponse(
             call: Call<TransformResponse>,
@@ -226,7 +242,8 @@ private fun transformImage(
         ) {
             response.body()?.let {
                 Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                setImageFromResponse(it.data)
+                viewModel.resultUrl.value = it.data.url
+                viewModel.isLoading.value = false
             }
         }
 
@@ -249,57 +266,9 @@ private fun onShareButtonClick(
             val imagePath = saveImageFromUrl(context, imageUrl)
 
             // Share the image
-            shareImage(context, shareImageLauncher, imagePath)
+            shareImage(shareImageLauncher, imagePath)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
-}
-
-private fun saveImageFromUrl(context: Context, imageUrl: String): String {
-    val url = URL(imageUrl)
-
-    // Create a directory for saving the image
-    val directory = File(context.externalCacheDir, "")
-    if (!directory.exists()) {
-        directory.mkdirs()
-    }
-
-    // Extract the filename from the URL
-    val filename = imageUrl.substringAfterLast("/")
-
-    // Build the path to save the image
-    val savePath = File(directory, filename)
-
-    val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
-    connection.doInput = true
-    connection.connect()
-    val input = connection.inputStream
-
-    val fileOutputStream = FileOutputStream(savePath)
-
-    val buffer = ByteArray(1024)
-    var bytesRead: Int
-    while (input.read(buffer).also { bytesRead = it } != -1) {
-        fileOutputStream.write(buffer, 0, bytesRead)
-    }
-
-    fileOutputStream.flush()
-    fileOutputStream.close()
-    input.close()
-
-    return savePath.absolutePath
-}
-
-private fun shareImage(context: Context, shareImageLauncher: ActivityResultLauncher<Intent>, imagePath: String) {
-    val imageFile = File(imagePath)
-    val imageUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
-
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "image/*"
-        putExtra(Intent.EXTRA_STREAM, imageUri)
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-    val chooser = Intent.createChooser(shareIntent, "Share Image")
-    shareImageLauncher.launch(chooser)
 }

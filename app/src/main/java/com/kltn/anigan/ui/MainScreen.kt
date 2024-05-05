@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
@@ -35,18 +36,20 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.enums.ImageType
 import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun MainScreen(navController: NavController?) {
+fun MainScreen(navController: NavController?, viewModel: DocsViewModel) {
     var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
 
@@ -71,7 +74,7 @@ fun MainScreen(navController: NavController?) {
                 .background(colorResource(id = R.color.black))
         ) {
             Header()
-            ListButton(navController = navController)
+            ListButton(navController = navController, viewModel)
         }
         Column(
             modifier = Modifier
@@ -134,15 +137,19 @@ private fun FuncButton(imageId: Int, text: String, onClick: () -> Unit = {}) {
 }
 
 @Composable
-private fun ListButton(navController: NavController? = null) {
+private fun ListButton(navController: NavController? = null, viewModel: DocsViewModel) {
     var route by remember {
         mutableStateOf(Routes.MAIN_SCREEN)
     }
+
+    val context = LocalContext.current
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = {
             it?.let {
+                viewModel.bitmap.value = getBitmapFromUri(context = context, uri = it)
+                viewModel.uri.value = it.toString()
                 navController?.navigate("$route?uri=$it")
             }
         }

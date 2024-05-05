@@ -23,10 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -40,10 +36,12 @@ import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.UploadRequestBody
 import com.kltn.anigan.domain.response.UploadUserImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 import com.kltn.anigan.utils.UriUtils.Companion.getFileName
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -61,14 +59,8 @@ import java.util.Locale
 import java.util.Objects
 
 @Composable
-fun AIToolScreen(navController: NavController) {
-    var capturedImageUri by remember {
-        mutableStateOf("")
-    }
-    var isLoading by remember {
-        mutableStateOf(false)
-    }
-
+fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
+    val isLoading = viewModel.isLoading.value
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -84,15 +76,7 @@ fun AIToolScreen(navController: NavController) {
                 },
                 navController
             )
-            InsertImage(
-                capturedImageUri,
-                setCapturedImageUri = { newUri ->
-                    capturedImageUri = newUri
-                },
-                isLoading
-            ) {
-                isLoading = it
-            }
+            InsertImage(viewModel)
 //            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
 
 //            getRefImage { updatedList ->
@@ -106,13 +90,14 @@ fun AIToolScreen(navController: NavController) {
 //            })
         }
 
-        Row (Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
+        Row (
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
         )
         {
             GenerateSetting(
-                capturedImageUri,
+                viewModel.url.value,
                 "",
                 isLoading,
                 navController
@@ -123,10 +108,7 @@ fun AIToolScreen(navController: NavController) {
 
 @Composable
 private fun InsertImage(
-    capturedImageUri: String,
-    setCapturedImageUri: (String) -> Unit,
-    isLoading: Boolean,
-    setIsLoading: (Boolean) -> Unit
+    viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
 
@@ -141,18 +123,14 @@ private fun InsertImage(
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
             val bitmap = BitmapUtils.getBitmapFromUri(uri, context)
                 ?: return@rememberLauncherForActivityResult
-
+            viewModel.bitmap.value = bitmap
             // Save squareBitmap to file and get the new URI
 //            val bitmapAfterRotate = rotate90(bitmap)
             val newUri = saveBitmapAndGetUri(context, bitmap)
+            viewModel.uri.value = newUri.toString()
             if (newUri != null) {
                 // Upload file to server
-                generateImage(newUri, context, setIsLoading = {
-                    setIsLoading(it)
-                }) {
-                    // Update capturedImageUri with the new URI
-                    setCapturedImageUri(it.url)
-                }
+                generateImage(context, viewModel)
             }
         }
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -185,11 +163,11 @@ private fun InsertImage(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (isLoading) {
+        if (viewModel.isLoading.value) {
             CircularProgressIndicator()
-        } else if (capturedImageUri.isNotEmpty()) {
+        } else if (viewModel.url.value.isNotEmpty()) {
             Image(
-                painter = rememberImagePainter(capturedImageUri),
+                painter = rememberImagePainter(viewModel.url.value),
                 contentDescription = null,
                 contentScale = ContentScale.Inside
             )
@@ -273,25 +251,25 @@ private fun Header(
 
 @SuppressLint("Recycle")
 private fun generateImage(
-    capturedImageUri: Uri,
     context: Context,
-    setIsLoading: (Boolean) -> Unit,
-    setImageFromResponse: (UploadUserImageResponse) -> Unit
+    viewModel: DocsViewModel
 ) {
-    setIsLoading(true)
-    if (capturedImageUri == Uri.EMPTY) {
+    viewModel.isLoading.value = true
+    val uri = encodeUri(viewModel.uri.value)
+
+    if (uri == Uri.EMPTY) {
         Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
         return
     }
 
     val parcelFileDescriptor = context.contentResolver.openFileDescriptor(
-        capturedImageUri, "r", null
+        uri, "r", null
     ) ?: return
 
     val inputStream = FileInputStream(parcelFileDescriptor.fileDescriptor)
     val file = File(
         context.cacheDir,
-        context.contentResolver.getFileName(capturedImageUri)
+        context.contentResolver.getFileName(uri)
     )
     val outputStream = FileOutputStream(file)
     inputStream.copyTo(outputStream)
@@ -311,15 +289,15 @@ private fun generateImage(
         ) {
             response.body()?.let {
                 Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                setImageFromResponse(it)
+                viewModel.url.value = it.url
             }
-            setIsLoading(false)
+            viewModel.isLoading.value = false
         }
 
         override fun onFailure(call: Call<UploadUserImageResponse>, t: Throwable) {
             Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
                 .show()
-            setIsLoading(false)
+            viewModel.isLoading.value = true
         }
     })
 }

@@ -1,7 +1,6 @@
 package com.kltn.anigan.ui
 
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -48,10 +47,7 @@ import com.kltn.anigan.ui.shared.layouts.footers.ListColor
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.createSingleImageFromMultipleImages
 import com.kltn.anigan.utils.BitmapUtils.Companion.generateBitmap
-import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
 import com.kltn.anigan.utils.BitmapUtils.Companion.getScreenWidth
-import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
-import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import kotlinx.coroutines.launch
 
 
@@ -59,14 +55,14 @@ import kotlinx.coroutines.launch
 @Composable
 fun BrushScreen(
     navController: NavController = rememberNavController(),
-    uri: String? = "",
+    viewModel: DocsViewModel,
 ) {
-    if (uri.isNullOrEmpty()) return
+    val uri = viewModel.uri.value
+    if (uri.isEmpty()) return
 
     val context = LocalContext.current
-    val viewModel = remember { DocsViewModel() }
     val screenWidth = getScreenWidth(context)
-    val bitmap = getBitmapFromUri(Uri.parse(encodeUri(uri)), context)
+    val bitmap = viewModel.bitmap.value
 
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
@@ -132,10 +128,8 @@ fun BrushScreen(
                             )
                             val combinedBitmap =
                                 createSingleImageFromMultipleImages(bitmap, scaledBitmap2)
-
-                            val newUri =
-                                saveBitmapAndGetUri(context, combinedBitmap) ?: Uri.EMPTY
-                            navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri")
+                            viewModel.bitmap.value = combinedBitmap
+                            navController.navigate(Routes.EDIT_SCREEN.route)
                         }
                     }
                 }

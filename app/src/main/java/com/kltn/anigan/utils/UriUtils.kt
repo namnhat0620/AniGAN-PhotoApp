@@ -3,10 +3,13 @@ package com.kltn.anigan.utils
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import androidx.activity.result.ActivityResultLauncher
+import androidx.core.content.FileProvider
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -17,50 +20,50 @@ class UriUtils {
 
     companion object {
 
-        fun encodeUri(uriString: String): String {
+        fun encodeUri(uriString: String): Uri {
             val uri = Uri.parse(uriString)
             val encodedUriString = Uri.encode(uri.lastPathSegment)
-            return uriString.replace(uri.lastPathSegment ?: "", encodedUriString)
+            return Uri.parse(uriString.replace(uri.lastPathSegment ?: "", encodedUriString))
         }
 
-        fun saveImageFromUrl(imageUrl: String): Uri? {
-            val url = URL(imageUrl)
-            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
-            val input = connection.inputStream
-
-            val saveDirectory = "image_${System.currentTimeMillis()}.jpg"
-            val directory = File(saveDirectory)
-            if (!directory.exists()) {
-                directory.mkdirs()
-            }
-
-            try {
-                // Extract the filename from the URL
-                val filename = imageUrl.substringAfterLast("/")
-
-                // Build the path to save the image
-                val savePath = File(saveDirectory, filename)
-
-                // Download the image from the URL
-                FileOutputStream(savePath).use { outputStream ->
-                    val data = ByteArray(1024)
-                    var bytesRead = input.read(data)
-                    while (bytesRead != -1) {
-                        outputStream.write(data, 0, bytesRead)
-                        bytesRead = input.read(data)
-                    }
-                }
-
-
-                println("Image saved successfully.")
-                return Uri.fromFile(savePath)
-            } catch (e: Exception) {
-                println("Failed to save the image: ${e.message}")
-                return null
-            }
-        }
+//        fun saveImageFromUrl(imageUrl: String): Uri? {
+//            val url = URL(imageUrl)
+//            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+//            connection.doInput = true
+//            connection.connect()
+//            val input = connection.inputStream
+//
+//            val saveDirectory = "image_${System.currentTimeMillis()}.jpg"
+//            val directory = File(saveDirectory)
+//            if (!directory.exists()) {
+//                directory.mkdirs()
+//            }
+//
+//            try {
+//                // Extract the filename from the URL
+//                val filename = imageUrl.substringAfterLast("/")
+//
+//                // Build the path to save the image
+//                val savePath = File(saveDirectory, filename)
+//
+//                // Download the image from the URL
+//                FileOutputStream(savePath).use { outputStream ->
+//                    val data = ByteArray(1024)
+//                    var bytesRead = input.read(data)
+//                    while (bytesRead != -1) {
+//                        outputStream.write(data, 0, bytesRead)
+//                        bytesRead = input.read(data)
+//                    }
+//                }
+//
+//
+//                println("Image saved successfully.")
+//                return Uri.fromFile(savePath)
+//            } catch (e: Exception) {
+//                println("Failed to save the image: ${e.message}")
+//                return null
+//            }
+//        }
 
         fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri? {
             // Create a file in the cache directory
@@ -105,26 +108,6 @@ class UriUtils {
             }
         }
 
-        fun saveUriToLibrary(context: Context, uri: Uri, displayName: String): Uri? {
-            val contentResolver = context.contentResolver
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            }
-
-            // Insert the URI into MediaStore
-            val uriInserted =
-                contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-            uriInserted?.let { outputStream ->
-                contentResolver.openOutputStream(outputStream)?.use { outputStream2 ->
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
-                        inputStream.copyTo(outputStream2)
-                    }
-                }
-            }
-            return uriInserted
-        }
-
         fun ContentResolver.getFileName(capturedImageUri: Uri): String {
             var name = ""
             val returnCursor = this.query(capturedImageUri, null, null, null, null)
@@ -138,5 +121,51 @@ class UriUtils {
             return name
         }
 
+        fun saveImageFromUrl(context: Context, imageUrl: String): Uri {
+            val url = URL(imageUrl)
+
+            // Create a directory for saving the image
+            val directory = File(context.externalCacheDir, "")
+            if (!directory.exists()) {
+                directory.mkdirs()
+            }
+
+            // Extract the filename from the URL
+            val filename = imageUrl.substringAfterLast("/")
+
+            // Build the path to save the image
+            val savePath = File(directory, filename)
+
+            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
+            connection.doInput = true
+            connection.connect()
+            val input = connection.inputStream
+
+            val fileOutputStream = FileOutputStream(savePath)
+
+            val buffer = ByteArray(1024)
+            var bytesRead: Int
+            while (input.read(buffer).also { bytesRead = it } != -1) {
+                fileOutputStream.write(buffer, 0, bytesRead)
+            }
+
+            fileOutputStream.flush()
+            fileOutputStream.close()
+            input.close()
+
+            val imagePath = savePath.absolutePath
+            val imageFile = File(imagePath)
+            return FileProvider.getUriForFile(context, "${context.packageName}.provider", imageFile)
+        }
+
+        fun shareImage(shareImageLauncher: ActivityResultLauncher<Intent>, imageUri: Uri) {
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/*"
+                putExtra(Intent.EXTRA_STREAM, imageUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val chooser = Intent.createChooser(shareIntent, "Share Image")
+            shareImageLauncher.launch(chooser)
+        }
     }
 }

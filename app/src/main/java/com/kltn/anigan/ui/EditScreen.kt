@@ -1,9 +1,10 @@
 package com.kltn.anigan.ui
 
-import android.net.Uri
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,88 +21,86 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
-import com.kltn.anigan.ui.shared.components.ListButton
-import com.kltn.anigan.utils.UriUtils
-import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
+import com.kltn.anigan.domain.DocsViewModel
+import com.kltn.anigan.ui.shared.layouts.footers.EditFooter
+import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.BitmapUtils.Companion.getScreenWidth
+import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 
 @Composable
 fun EditScreen(
     navController: NavController = NavController(LocalContext.current),
-    uri: String? = "",
+    viewModel: DocsViewModel
 ) {
-    if (uri.isNullOrEmpty()) return
-
-    var capturedImageUri by remember {
-        mutableStateOf<Uri>(Uri.parse(encodeUri(uri)))
-    }
+    val uri = viewModel.uri.value
+    if (uri.isEmpty()) navController.popBackStack()
 
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
+        val context = LocalContext.current
+        val bitmap = viewModel.bitmap.value
+        val screenWidth = getScreenWidth(context)
+        val croppedSize =
+            BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
+        val scaledBitmap = bitmap?.let {
+            Bitmap.createScaledBitmap(
+                it,
+                croppedSize[0].toInt(),
+                croppedSize[1].toInt(),
+                false
+            )
+        }
         //Header
         Header(
             navController = navController,
-            uri = capturedImageUri,
-            fileName = "image_${System.currentTimeMillis()}.jpg"
+            viewModel = viewModel
+        )
+        Canvas(
+            modifier = Modifier
+                .clipToBounds()
+                .width(BitmapUtils.dpFromPx(context, croppedSize[0].toFloat()).dp)
+                .height(BitmapUtils.dpFromPx(context, croppedSize[1].toFloat()).dp)
         ) {
-            capturedImageUri = it
+            scaledBitmap?.let {
+                drawImage(
+                    image = it.asImageBitmap()
+                )
+            }
         }
 
-        //Image field
-        if (capturedImageUri.path?.isNotEmpty() == true) {
-            Image(
-                painter = rememberImagePainter(capturedImageUri),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth(),
-                contentScale = ContentScale.Inside,
-            )
-        } else {
-            Image(
-                painter = painterResource(id = R.drawable.insert_img),
-                contentDescription = "Insert Image"
-            )
-        }
-
-        Footer(capturedImageUri, navController) {
-            capturedImageUri = it
-        }
+        EditFooter(navController, viewModel)
     }
 }
 
 @Composable
 private fun Header(
     navController: NavController,
-    uri: Uri,
-    fileName: String,
-    onChangeUri: (Uri) -> Unit
+    viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = {
-            it?.let { onChangeUri(it) }
+            it?.let { viewModel.uri.value = it.toString() }
         }
     )
+    val bitmap = viewModel.bitmap.value
     Row(
         Modifier
             .height(50.dp)
@@ -140,7 +138,9 @@ private fun Header(
             //Icon notification
             OutlinedButton(
                 onClick = {
-                    UriUtils.saveUriToLibrary(context, uri, fileName)
+                    if (bitmap != null) {
+                        saveBitmapAndGetUri(context, bitmap)
+                    }
                     Toast.makeText(context, "Successfully!", Toast.LENGTH_LONG).show()
                 }
             ) {
@@ -148,22 +148,4 @@ private fun Header(
             }
         }
     }
-}
-
-@Composable
-private fun Footer(
-    capturedImageUri: Uri,
-    navController: NavController,
-    onChangeUri: (Uri) -> Unit
-) {
-    Row(
-        Modifier
-            .fillMaxSize(),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        ListButton(uri = capturedImageUri, navController = navController) {
-            onChangeUri(it)
-        }
-    }
-
 }

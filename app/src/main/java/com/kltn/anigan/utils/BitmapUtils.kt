@@ -6,15 +6,16 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.request.RequestOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.io.InputStream
 
 class BitmapUtils {
@@ -29,22 +30,18 @@ class BitmapUtils {
             }
         }
 
-        fun rotate90(bitmap: Bitmap): Bitmap {
-            //Rotate 90
-            val matrix = Matrix()
-            matrix.postRotate(90f)
-            return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-        }
-
         suspend fun getBitmapFromUrl(urlString: String, context: Context): Bitmap? {
             return withContext(Dispatchers.IO) {
                 try {
+                    val requestOptions = RequestOptions()
+                        .override(500, 500) // Set your desired width and height
                     Glide.with(context)
                         .asBitmap()
                         .load(urlString)
+                        .apply(requestOptions)
                         .submit()
                         .get()
-                } catch (e: Exception) {
+                } catch (e: IOException) {
                     e.printStackTrace()
                     null
                 }

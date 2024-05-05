@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -25,14 +26,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
+import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.enums.EditType
 import com.kltn.anigan.routes.Routes
 import com.yalantis.ucrop.UCrop
 import java.io.File
+import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 
 @Composable
-fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Unit) {
+fun ListButton(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
+    val uri = encodeUri(viewModel.uri.value)
+    val isLoading = viewModel.isLoading.value
 
     val cropLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -56,12 +61,12 @@ fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Un
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             FuncButton2(
-                R.drawable.baseline_auto_awesome_24, "AI Tools",
+                R.drawable.baseline_auto_awesome_24, "AI Tools", isLoading
             ) {
                 navController.navigate(Routes.AI_TOOLS.route)
             }
             FuncButton2(
-                R.drawable._crop, "Crop"
+                R.drawable._crop, "Crop", isLoading
             ) {
                 val destinationFileName = "image_${System.currentTimeMillis()}.jpg"
                 val destinationUri = Uri.fromFile(File(context.cacheDir, destinationFileName))
@@ -70,20 +75,20 @@ fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Un
 
                 val uCropIntent = uCrop.getIntent(context)
                 cropLauncher.launch(uCropIntent)
-                onEditResult(destinationUri)
+                viewModel.uri.value = destinationUri.toString()
             }
             FuncButton2(
-                R.drawable.baseline_brush_24, "Brush"
+                R.drawable.baseline_brush_24, "Brush", isLoading
             ) {
-                navController.navigate("${Routes.BRUSH_SCREEN.route}?uri=$uri")
+                navController.navigate(Routes.BRUSH_SCREEN.route)
             }
             FuncButton2(
-                R.drawable.baseline_text_fields_24, "Text"
+                R.drawable.baseline_text_fields_24, "Text", isLoading
             ) {
                 navController.navigate("${Routes.ADD_TEXT.route}?uri=$uri")
             }
             FuncButton2(
-                R.drawable.baseline_auto_fix_high_24, "Filters",
+                R.drawable.baseline_auto_fix_high_24, "Filters", isLoading
             ) {
                 navController.navigate("${Routes.FILTER_TOOL.route}?uri=$uri")
             }
@@ -93,10 +98,13 @@ fun ListButton(uri: Uri, navController: NavController, onEditResult: (Uri) -> Un
 }
 
 @Composable
-private fun FuncButton2(imageId: Int, text: String, onClick: () -> Unit = {}) {
+private fun FuncButton2(imageId: Int, text: String, isLoading: Boolean, onClick: () -> Unit = {}) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable { onClick() }
+        modifier = Modifier.clickable(
+            enabled = !isLoading
+        ) { onClick() }
+            .alpha(if(isLoading) 0.4f else 1f)
     ) {
         Image(
             painter = painterResource(id = imageId),

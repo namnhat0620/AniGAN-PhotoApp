@@ -4,4 +4,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="background_gray">#202020</color>
     <color name="background_blue">#4D83C2</color>
+    <color name="background_share_btn">#505050</color>
 </resources>
