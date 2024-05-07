@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -77,24 +78,26 @@ fun AIResultScreen(
     val url = viewModel.url.value
     val isLoading = viewModel.isLoading.value
 
-    if (url.isEmpty()) return
-    for (i in 0 until 3) {
+    if (url.isEmpty()) {
+        navController.popBackStack()
+        return
+    }
+//    for (i in 0 until 3) {
         LaunchedEffect(Unit) {
             viewModel.isLoading.value = true
-            transformImage(context, viewModel, i) {
+            transformImage(context, viewModel) {
                 resultList += it
             }
         }
-    }
-
-    GlobalScope.launch(Dispatchers.IO) {
-        try {
-            if (focusURL.isNotEmpty()) {
+//    }
+    if (focusURL.isNotEmpty()) {
+        GlobalScope.launch(Dispatchers.IO) {
+            try {
                 viewModel.bitmap.value =
                     getBitmapFromUrl(context = context, urlString = viewModel.resultUrl.value)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
@@ -107,16 +110,16 @@ fun AIResultScreen(
             Image(
                 painter = rememberImagePainter(focusURL),
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Inside,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(350.dp)
+                    .fillMaxHeight(0.75f)
             )
         } else {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(350.dp),
+                    .fillMaxHeight(0.75f),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -124,9 +127,9 @@ fun AIResultScreen(
             }
         }
 
-        PhotoLibrary(itemList = resultList) {
-            viewModel.resultUrl.value = it
-        }
+//        PhotoLibrary(itemList = resultList) {
+//            viewModel.resultUrl.value = it
+//        }
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -239,13 +242,12 @@ private fun Header(navController: NavController) {
 private fun transformImage(
     context: Context,
     viewModel: DocsViewModel,
-    referenceId: Int,
     onResult: (ImageClassFromInternet) -> Unit
 ) {
     val sourceUrl = viewModel.url.value
 
     TransformApi().transformImage(
-        TransformRequest(sourceImg = sourceUrl, referenceId = referenceId)
+        TransformRequest(sourceImg = sourceUrl, referenceId = viewModel.reference.intValue)
     ).enqueue(object : Callback<TransformResponse> {
         override fun onResponse(
             call: Call<TransformResponse>,

@@ -12,8 +12,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,10 +23,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -34,12 +40,16 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
+import com.bumptech.glide.integration.compose.GlideImage
+import com.bumptech.glide.integration.compose.placeholder
 import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.UploadRequestBody
 import com.kltn.anigan.domain.response.UploadUserImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
+import com.kltn.anigan.ui.shared.components.PhotoLibrary
+import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 import com.kltn.anigan.utils.UriUtils.Companion.getFileName
@@ -84,25 +94,28 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
 //                list = updatedList
 //            }
 
-//            Title(text1 = "Style", text2 = "More >")
-//            PhotoLibrary(itemList = list, setReferenceImageUrl = { url ->
-//                referenceImageUrl = url
-//            })
+
         }
 
-        Row (
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp)
-        )
-        {
-            GenerateSetting(
-                viewModel.url.value,
-                "",
-                isLoading,
-                navController
+        Column{
+            Title(text1 = "Style", text2 = "")
+            RefLibrary(viewModel)
+            Spacer(Modifier.height(12.dp))
+            Row (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
             )
+            {
+                GenerateSetting(
+                    viewModel.url.value,
+                    "",
+                    isLoading,
+                    navController
+                )
+            }
         }
+
     }
 }
 
@@ -149,7 +162,7 @@ private fun InsertImage(
             .fillMaxWidth()
             .background(color = colorResource(id = R.color.background_gray))
             .defaultMinSize(minHeight = 250.dp)
-            .heightIn(max = 550.dp)
+            .fillMaxHeight(0.6f)
             .clickable {
                 val permissionCheckResult =
                     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
@@ -302,3 +315,32 @@ private fun generateImage(
     })
 }
 
+@Composable
+private fun RefLibrary(viewModel: DocsViewModel) {
+    val listRef = arrayListOf(
+        R.drawable.face_paint_512_v2,
+        R.drawable.face_paint_512_v1,
+        R.drawable.paprika,
+        R.drawable.celeba_distill,
+    )
+
+    LazyRow(
+        modifier = Modifier.padding(vertical = 15.dp)
+    ) {
+        itemsIndexed(listRef) { index, it ->
+            Image(
+                painter = painterResource(id = it),
+                contentDescription = "",
+                modifier = Modifier
+                    .padding(end = 12.dp)
+                    .size(100.dp)
+                    .clickable {
+                        viewModel.reference.intValue = index
+                    }
+                    .graphicsLayer {
+                        alpha = if (index == viewModel.reference.intValue) 0.5f else 1f
+                    }
+            )
+        }
+    }
+}

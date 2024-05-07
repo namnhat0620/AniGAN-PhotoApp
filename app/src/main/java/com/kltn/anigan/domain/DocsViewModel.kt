@@ -36,6 +36,7 @@ class DocsViewModel {
     var url = mutableStateOf("")
     var resultUrl = mutableStateOf("")
     var isLoading = mutableStateOf(false)
+    var reference = mutableIntStateOf(0)
 
     // For add hair
     var hairResourceId = mutableIntStateOf(R.drawable.male_3)
