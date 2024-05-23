@@ -38,7 +38,7 @@ fun BaseFooter(
             contentDescription = "icon_change_image",
             Modifier
                 .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp)
+                .size(20.dp)
                 .clickable {
                     navController.popBackStack()
                 },
@@ -49,7 +49,7 @@ fun BaseFooter(
                 contentDescription = "icon_change_image",
                 Modifier
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
-                    .size(17.dp)
+                    .size(20.dp)
                     .clickable {
                         if(viewModel != null) {
                             viewModel.saveCanvas.value = true

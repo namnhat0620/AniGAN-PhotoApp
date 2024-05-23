@@ -25,6 +25,15 @@ fun AniganNavHost(
         composable(Routes.MAIN_SCREEN.route) {
             MainScreen(navController, viewModel)
         }
+        composable(Routes.LOGIN.route) {
+            LoginScreen(navController, viewModel)
+        }
+        composable(Routes.SIGN_UP.route) {
+            SignUpScreen(navController, viewModel)
+        }
+        composable(Routes.PROFILE.route) {
+            ProfileScreen(navController = navController, viewModel = viewModel)
+        }
         composable(Routes.AI_TOOLS.route) {
             AIToolScreen(navController, viewModel)
         }
@@ -61,6 +70,12 @@ fun AniganNavHost(
             Routes.FILTER_TOOL.route
         ) {
             FilterScreen(navController, viewModel)
+        }
+
+        composable(
+            Routes.PLAN.route
+        ) {
+            PlanScreen(navController, viewModel)
         }
     }
 }

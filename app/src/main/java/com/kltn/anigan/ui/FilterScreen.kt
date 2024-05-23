@@ -37,14 +37,14 @@ import com.kltn.anigan.utils.BitmapUtils.Companion.applyColorFilter
 fun FilterScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
     val screenWidth = BitmapUtils.getScreenWidth(context)
-    val bitmap = viewModel.bitmap.value
+    val bitmap = viewModel.bitmap
     if (bitmap == null) navController.popBackStack()
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
     viewModel.x.floatValue =
         (croppedSize[0].toInt() / 2).toFloat() - viewModel.textSize.floatValue * 3
     viewModel.y.floatValue = (croppedSize[1].toInt() / 2).toFloat()
-    viewModel.bitmap.value = bitmap
+    viewModel.bitmap = bitmap
     val scaledBitmap = bitmap?.let {
         Bitmap.createScaledBitmap(
             it,
@@ -145,7 +145,7 @@ private fun FuncButton(
     colorMatrix: ColorMatrix
 ) {
     val context = LocalContext.current
-    val bitmap = viewModel.bitmap.value
+    val bitmap = viewModel.bitmap
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, 100.0)
     val scaledBitmap = bitmap?.let {
@@ -189,7 +189,7 @@ private fun BaseFooter(
     navController: NavController,
     viewModel: DocsViewModel
 ) {
-    val bitmap = viewModel.bitmap.value ?: return
+    val bitmap = viewModel.bitmap ?: return
     val colorMatrix = viewModel.colorMatrix.value
 
     Row(
@@ -205,7 +205,7 @@ private fun BaseFooter(
             contentDescription = "icon_change_image",
             Modifier
                 .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp)
+                .size(20.dp)
                 .clickable {
                     navController.popBackStack()
                 },
@@ -216,10 +216,10 @@ private fun BaseFooter(
                 contentDescription = "icon_change_image",
                 Modifier
                     .padding(start = 12.dp, top = 16.dp, end = 12.dp)
-                    .size(17.dp)
+                    .size(20.dp)
                     .clickable {
                             val bitmapAppliedFilter = applyColorFilter(bitmap, colorMatrix)
-                            viewModel.bitmap.value = bitmapAppliedFilter
+                            viewModel.bitmap = bitmapAppliedFilter
                             navController.navigate(Routes.EDIT_SCREEN.route)
                     }
             )

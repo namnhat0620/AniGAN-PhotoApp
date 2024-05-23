@@ -19,6 +19,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -57,12 +58,16 @@ fun AddTextScreen(
 ) {
     val context = LocalContext.current
     val screenWidth = getScreenWidth(context)
-    val bitmap = viewModel.bitmap.value
+    val bitmap = viewModel.bitmap
 
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
-    viewModel.x.floatValue = (croppedSize[0].toInt() / 2).toFloat() - viewModel.textSize.floatValue * 3
-    viewModel.y.floatValue =  (croppedSize[1].toInt() / 2).toFloat()
+
+    LaunchedEffect(Unit){
+        viewModel.x.floatValue = (croppedSize[0].toInt() / 2).toFloat() - viewModel.textSize.floatValue * 3
+        viewModel.y.floatValue =  (croppedSize[1].toInt() / 2).toFloat()
+    }
+
     val scaledBitmap = bitmap?.let {
         Bitmap.createScaledBitmap(
             it,
@@ -123,7 +128,7 @@ fun AddTextScreen(
                             )
                             val combinedBitmap =
                                 createSingleImageFromMultipleImages(bitmap, scaledBitmap2)
-                            viewModel.bitmap.value = combinedBitmap
+                            viewModel.bitmap = combinedBitmap
 
                             navController.navigate(Routes.EDIT_SCREEN.route)
                         }

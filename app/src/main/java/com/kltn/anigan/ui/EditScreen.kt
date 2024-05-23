@@ -33,9 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.domain.DocsViewModel
+import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.layouts.footers.EditFooter
 import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.getScreenWidth
+import com.kltn.anigan.utils.UriUtils
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 
 @Composable
@@ -43,9 +45,20 @@ fun EditScreen(
     navController: NavController = NavController(LocalContext.current),
     viewModel: DocsViewModel
 ) {
-    val uri = viewModel.uri.value
-    if (uri.isEmpty()) navController.popBackStack()
-
+    val context = LocalContext.current
+    val bitmap = viewModel.bitmap
+    if (bitmap == null) navController.popBackStack()
+    val screenWidth = getScreenWidth(context)
+    val croppedSize =
+        BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
+    val scaledBitmap = bitmap?.let {
+        Bitmap.createScaledBitmap(
+            it,
+            croppedSize[0].toInt(),
+            croppedSize[1].toInt(),
+            false
+        )
+    }
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -53,19 +66,6 @@ fun EditScreen(
             .padding(horizontal = 12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        val context = LocalContext.current
-        val bitmap = viewModel.bitmap.value
-        val screenWidth = getScreenWidth(context)
-        val croppedSize =
-            BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
-        val scaledBitmap = bitmap?.let {
-            Bitmap.createScaledBitmap(
-                it,
-                croppedSize[0].toInt(),
-                croppedSize[1].toInt(),
-                false
-            )
-        }
         //Header
         Header(
             navController = navController,
@@ -84,7 +84,7 @@ fun EditScreen(
             }
         }
 
-        EditFooter(navController, viewModel)
+        EditFooter(navController, viewModel, isLoading = false)
     }
 }
 
@@ -94,13 +94,17 @@ private fun Header(
     viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
+    val bitmap = viewModel.bitmap
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = {
-            it?.let { viewModel.uri.value = it.toString() }
+            it?.let {
+                viewModel.uri.value = it.toString()
+                val uri = UriUtils.encodeUri(viewModel.uri.value)
+                viewModel.bitmap = BitmapUtils.getBitmapFromUri(uri, context)
+            }
         }
     )
-    val bitmap = viewModel.bitmap.value
     Row(
         Modifier
             .height(50.dp)
@@ -113,9 +117,9 @@ private fun Header(
             contentDescription = "icon_change_image",
             Modifier
                 .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp)
+                .size(20.dp)
                 .clickable {
-                    navController.popBackStack()
+                    navController.navigate(Routes.MAIN_SCREEN.route)
                 },
         )
 

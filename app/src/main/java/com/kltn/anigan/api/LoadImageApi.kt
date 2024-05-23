@@ -22,10 +22,14 @@ import java.net.URL
 
 interface LoadImageApi {
     @GET("/image")
-    fun getRefImage(@Query("type") type: Int, @Query("limit") limit: Int = 5): Call<LoadImageResponse>
+    fun getRefImage(
+        @Query("type") type: Int,
+        @Query("page") page: Int,
+        @Query("limit") limit: Int = 5
+    ): Call<LoadImageResponse>
 
     companion object {
-        operator fun invoke(): LoadImageApi{
+        operator fun invoke(): LoadImageApi {
             val interceptor = HttpLoggingInterceptor()
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY) // Set log level to BODY to log request and response data
 
@@ -53,6 +57,7 @@ class UrlInstanceCreator : InstanceCreator<Url> {
         return Url() // You can pass a default URL here if needed
     }
 }
+
 class UrlDeserializer : JsonDeserializer<URL> {
     override fun deserialize(
         json: JsonElement?,

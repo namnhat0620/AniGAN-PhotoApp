@@ -6,6 +6,6 @@
         <item name="windowSplashScreenBackground">@android:color/black</item>
         <!-- Use windowSplashScreenAnimatedIcon to add a drawable or an animated
              drawable. -->
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_anigan</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/aniganlogo</item>
     </style>
 </resources>

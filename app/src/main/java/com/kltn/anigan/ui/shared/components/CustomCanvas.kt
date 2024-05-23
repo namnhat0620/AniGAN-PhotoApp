@@ -17,10 +17,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -54,73 +51,73 @@ class MyCanvasView(
         when (editType) {
             EditType.BRUSH -> DrawHairCanvas()
             EditType.TEXT -> DrawTextCanvas()
-            else -> {}
+            EditType.CROP -> CropImageCanvas()
         }
     }
-
-    @Composable
-    fun DrawPathCanvas() {
-        val context = LocalContext.current
-        val screenWidth = getScreenWidth(context)
-        val croppedSize =
-            cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble(), false)
-        val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
-        val undo = viewModel.undoCanvas.value
-        if (undo) {
-            path.reset()
-            viewModel.undoCanvas.value = false
-        }
-        var recompose = viewModel.recompose.intValue
-        val canvasEdit = viewModel.canvasEdit.value
-        scrollPermit.invoke(canvasEdit)
-        Canvas(modifier = Modifier
-            .clipToBounds()
-            .width(dpFromPx(context, croppedSize[0].toFloat()).dp)
-            .height(dpFromPx(context, croppedSize[1].toFloat()).dp)
-            .pointerInteropFilter(
-                requestDisallowInterceptTouchEvent = scrollPermit
-            ) { event ->
-                val x = event.x
-                val y = event.y
-                if (canvasEdit)
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            scrollPermit.invoke(true)
-                            recompose++
-                            viewModel.recompose.intValue = recompose
-                            path.moveTo(x, y)
-                        }
-
-                        MotionEvent.ACTION_MOVE -> {
-                            scrollPermit.invoke(true)
-                            recompose++
-                            viewModel.recompose.intValue = recompose
-                            path.lineTo(x, y)
-                        }
-
-                        MotionEvent.ACTION_UP -> {
-                            scrollPermit.invoke(false)
-                            recompose = 0
-                            viewModel.recompose.intValue = recompose
-                        }
-                    }
-                true
-            }
-        ) {
-            val color = viewModel.color.value
-            val opacity = viewModel.opacity.floatValue / 100f
-            val alphaColor = color.copy(alpha = color.alpha * opacity)
-            drawPath(
-                path = path,
-                color = alphaColor,
-                style = Stroke(
-                    width = viewModel.brushSize.floatValue,
-                    cap = StrokeCap.Round,
-                    join = StrokeJoin.Round
-                ),
-            )
-        }
-    }
+//
+//    @Composable
+//    fun DrawPathCanvas() {
+//        val context = LocalContext.current
+//        val screenWidth = getScreenWidth(context)
+//        val croppedSize =
+//            cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble(), false)
+//        val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
+//        val undo = viewModel.undoCanvas.value
+//        if (undo) {
+//            path.reset()
+//            viewModel.undoCanvas.value = false
+//        }
+//        var recompose = viewModel.recompose.intValue
+//        val canvasEdit = viewModel.canvasEdit.value
+//        scrollPermit.invoke(canvasEdit)
+//        Canvas(modifier = Modifier
+//            .clipToBounds()
+//            .width(dpFromPx(context, croppedSize[0].toFloat()).dp)
+//            .height(dpFromPx(context, croppedSize[1].toFloat()).dp)
+//            .pointerInteropFilter(
+//                requestDisallowInterceptTouchEvent = scrollPermit
+//            ) { event ->
+//                val x = event.x
+//                val y = event.y
+//                if (canvasEdit)
+//                    when (event.action) {
+//                        MotionEvent.ACTION_DOWN -> {
+//                            scrollPermit.invoke(true)
+//                            recompose++
+//                            viewModel.recompose.intValue = recompose
+//                            path.moveTo(x, y)
+//                        }
+//
+//                        MotionEvent.ACTION_MOVE -> {
+//                            scrollPermit.invoke(true)
+//                            recompose++
+//                            viewModel.recompose.intValue = recompose
+//                            path.lineTo(x, y)
+//                        }
+//
+//                        MotionEvent.ACTION_UP -> {
+//                            scrollPermit.invoke(false)
+//                            recompose = 0
+//                            viewModel.recompose.intValue = recompose
+//                        }
+//                    }
+//                true
+//            }
+//        ) {
+//            val color = viewModel.color.value
+//            val opacity = viewModel.opacity.floatValue / 100f
+//            val alphaColor = color.copy(alpha = color.alpha * opacity)
+//            drawPath(
+//                path = path,
+//                color = alphaColor,
+//                style = Stroke(
+//                    width = viewModel.brushSize.floatValue,
+//                    cap = StrokeCap.Round,
+//                    join = StrokeJoin.Round
+//                ),
+//            )
+//        }
+//    }
 
     @Composable
     fun DrawTextCanvas() {
@@ -174,7 +171,7 @@ class MyCanvasView(
                 val paint = Paint().asFrameworkPaint()
                 paint.textSize = viewModel.textSize.floatValue
                 paint.color = viewModel.color.value.toArgb()
-                paint.typeface =  Typeface.createFromAsset(context.assets, "CCBattleCry-Regular.ttf")
+                paint.typeface = Typeface.createFromAsset(context.assets, "CCBattleCry-Regular.ttf")
                 canvas.nativeCanvas.drawText(text, x, y, paint)
             }
         }
@@ -240,8 +237,9 @@ class MyCanvasView(
                 true
             }
         ) {
-            val x = viewModel.x.floatValue - scaledHairBitmap.width/2
-            val y = viewModel.y.floatValue - scaledHairBitmap.height/2
+            val x = viewModel.x.floatValue - scaledHairBitmap.width / 2
+            val y = viewModel.y.floatValue - scaledHairBitmap.height / 2
+
             val alpha = viewModel.opacity.floatValue / 100
             // Draw the image on the canvas with the calculated position and size
             drawImage(
@@ -251,5 +249,75 @@ class MyCanvasView(
             )
 
         }
+    }
+
+    @Composable
+    fun CropImageCanvas() {
+//        val context = LocalContext.current
+//        val screenWidth = getScreenWidth(context)
+//        val croppedSize =
+//            cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble(), false)
+//        val scrollPermit = remember { RequestDisallowInterceptTouchEvent() }
+//        val cropRect = viewModel.cropRect.value
+//        val canvasEdit = viewModel.canvasEdit.value
+//        var recompose = viewModel.recompose.intValue
+//        val rectX = viewModel.x.floatValue
+//        val rectY = viewModel.y.floatValue
+//        Canvas(
+//            modifier = Modifier
+//                .clipToBounds()
+//                .width(dpFromPx(context, croppedSize[0].toFloat()).dp)
+//                .height(dpFromPx(context, croppedSize[1].toFloat()).dp)
+//            .pointerInteropFilter(
+//                requestDisallowInterceptTouchEvent = scrollPermit
+//            ) { event ->
+//                val x = event.x
+//                val y = event.y
+//                if (canvasEdit)
+//                    when (event.action) {
+//                        MotionEvent.ACTION_DOWN -> {
+//                            scrollPermit.invoke(true)
+//                            recompose++
+//                            if(rectX==x || ) {
+//                                viewModel.move.value = false
+//                                viewModel.resize.value = true
+//                            }
+//                            else {
+//                                viewModel.move.value = true
+//                                viewModel.resize.value = false
+//                            }
+//                        }
+//
+//                        MotionEvent.ACTION_MOVE -> {
+//                            scrollPermit.invoke(true)
+//                            recompose++
+//                            viewModel.recompose.intValue = recompose
+//                            path.lineTo(x, y)
+//                        }
+//
+//                        MotionEvent.ACTION_UP -> {
+//                            scrollPermit.invoke(false)
+//                            recompose = 0
+//                            viewModel.recompose.intValue = recompose
+//                        }
+//                    }
+//                true
+//            }
+////                .graphicsLayer(
+////                    scaleX = cropScaleX.toFloat(),
+////                    scaleY = cropScaleY.toFloat(),
+////                    translationX = -(cropRect.left).toFloat(),
+////                    translationY = -(cropRect.top).toFloat()
+////                )
+//        )  {
+//            // Vẽ hình chữ nhật đầy bên trong với màu trắng
+//            drawRect(
+//                color = Color.Black.copy(alpha = 0.4f),
+//                size = Size(croppedSize[0].toFloat(), croppedSize[1].toFloat()),
+//                style = Stroke(200.dp.toPx())
+//
+//            )
+//
+//        }
     }
 }

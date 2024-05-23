@@ -13,14 +13,15 @@ import com.kltn.anigan.ui.shared.components.ListButton
 @Composable
 fun EditFooter(
     navController: NavController,
-    viewModel: DocsViewModel
+    viewModel: DocsViewModel,
+    isLoading: Boolean
 ) {
     Row(
         Modifier
             .fillMaxSize(),
         verticalAlignment = Alignment.Bottom
     ) {
-        ListButton(navController = navController, viewModel)
+        ListButton(navController = navController, viewModel, isLoading)
     }
 
 }

@@ -21,49 +21,14 @@ class UriUtils {
     companion object {
 
         fun encodeUri(uriString: String): Uri {
-            val uri = Uri.parse(uriString)
-            val encodedUriString = Uri.encode(uri.lastPathSegment)
-            return Uri.parse(uriString.replace(uri.lastPathSegment ?: "", encodedUriString))
+            return if(uriString.isEmpty()) {
+                Uri.EMPTY
+            } else {
+                val uri = Uri.parse(uriString)
+                val encodedUriString = Uri.encode(uri?.lastPathSegment)
+                Uri.parse(uriString.replace(uri?.lastPathSegment ?: "", encodedUriString))
+            }
         }
-
-//        fun saveImageFromUrl(imageUrl: String): Uri? {
-//            val url = URL(imageUrl)
-//            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
-//            connection.doInput = true
-//            connection.connect()
-//            val input = connection.inputStream
-//
-//            val saveDirectory = "image_${System.currentTimeMillis()}.jpg"
-//            val directory = File(saveDirectory)
-//            if (!directory.exists()) {
-//                directory.mkdirs()
-//            }
-//
-//            try {
-//                // Extract the filename from the URL
-//                val filename = imageUrl.substringAfterLast("/")
-//
-//                // Build the path to save the image
-//                val savePath = File(saveDirectory, filename)
-//
-//                // Download the image from the URL
-//                FileOutputStream(savePath).use { outputStream ->
-//                    val data = ByteArray(1024)
-//                    var bytesRead = input.read(data)
-//                    while (bytesRead != -1) {
-//                        outputStream.write(data, 0, bytesRead)
-//                        bytesRead = input.read(data)
-//                    }
-//                }
-//
-//
-//                println("Image saved successfully.")
-//                return Uri.fromFile(savePath)
-//            } catch (e: Exception) {
-//                println("Failed to save the image: ${e.message}")
-//                return null
-//            }
-//        }
 
         fun saveBitmapAndGetUri(context: Context, bitmap: Bitmap): Uri? {
             // Create a file in the cache directory
@@ -167,5 +132,24 @@ class UriUtils {
             val chooser = Intent.createChooser(shareIntent, "Share Image")
             shareImageLauncher.launch(chooser)
         }
+
+        fun bitmapToUri(context: Context, bitmap: Bitmap): Uri? {
+            return try {
+                val cachePath = File(context.cacheDir, "images")
+                cachePath.mkdirs() // Create the cache directory if it doesn't exist
+                val file = File(cachePath, "temp_image_${System.currentTimeMillis()}.jpg")
+
+                val outputStream = FileOutputStream(file)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+                outputStream.close()
+
+                // Get the content Uri for the file
+                FileProvider.getUriForFile(context, context.packageName + ".provider", file)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+
     }
 }

@@ -12,11 +12,12 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
 import com.bumptech.glide.Glide
-import com.bumptech.glide.request.RequestOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.util.concurrent.ExecutionException
 
 class BitmapUtils {
     companion object {
@@ -31,16 +32,20 @@ class BitmapUtils {
         }
 
         suspend fun getBitmapFromUrl(urlString: String, context: Context): Bitmap? {
+            if (urlString.isEmpty()) return null
             return withContext(Dispatchers.IO) {
                 try {
-                    val requestOptions = RequestOptions()
-                        .override(500, 500) // Set your desired width and height
+//                    val requestOptions = RequestOptions()
+//                        .override(500, 500) // Set your desired width and height
                     Glide.with(context)
                         .asBitmap()
                         .load(urlString)
-                        .apply(requestOptions)
+//                        .apply(requestOptions)
                         .submit()
                         .get()
+                } catch (e: ExecutionException) {
+                    e.printStackTrace()
+                    null
                 } catch (e: IOException) {
                     e.printStackTrace()
                     null
@@ -59,37 +64,44 @@ class BitmapUtils {
             return displayMetrics.widthPixels
         }
 
-        fun cropWidthHeight(bmWidth: Int?, bmHeight: Int?, target: Double, setToTargetWidth: Boolean = false): List<Double> {
+        fun cropWidthHeight(
+            bmWidth: Int?,
+            bmHeight: Int?,
+            target: Double,
+            setToTargetWidth: Boolean = false
+        ): List<Double> {
             var dWidth: Double = bmWidth?.toDouble() ?: return listOf(0.0, 0.0)
             var dHeight: Double = bmHeight?.toDouble() ?: return listOf(0.0, 0.0)
             val width: Double = dWidth
             val height: Double = dHeight
-            val dominant = if(dWidth >= dHeight) {dWidth} else {dHeight}
-            if(dominant > target) {
+            val dominant = if (dWidth >= dHeight) {
+                dWidth
+            } else {
+                dHeight
+            }
+            if (dominant > target) {
                 //Zoom out
                 val dValue = dominant - target
-                if(dWidth >= dHeight) {
+                if (dWidth >= dHeight) {
                     dWidth = width - dValue
-                    dHeight = height - (dValue * (height/width))
-                }
-                else {
-                    dWidth = width - (dValue * (width/height))
+                    dHeight = height - (dValue * (height / width))
+                } else {
+                    dWidth = width - (dValue * (width / height))
                     dHeight = height - dValue
                 }
-            }
-            else if(dominant < target) {
+            } else if (dominant < target) {
                 //Zoom in
                 val dValue = target - dominant
-                if(dWidth >= dHeight) {
+                if (dWidth >= dHeight) {
                     dWidth = width + dValue
-                    dHeight = height + (dValue * (height/width))
+                    dHeight = height + (dValue * (height / width))
                 } else {
-                    dWidth = width + (dValue * (width/height))
+                    dWidth = width + (dValue * (width / height))
                     dHeight = height + dValue
                 }
             }
 
-            if(setToTargetWidth) {
+            if (setToTargetWidth) {
                 while (dWidth < target) {
                     dWidth++
                     dHeight++
@@ -119,7 +131,8 @@ class BitmapUtils {
         }
 
         fun applyColorFilter(bitmap: Bitmap, colorMatrix: ColorMatrix): Bitmap {
-            val filteredBitmap = Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
+            val filteredBitmap =
+                Bitmap.createBitmap(bitmap.width, bitmap.height, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(filteredBitmap)
             val paint = Paint()
 
@@ -131,5 +144,12 @@ class BitmapUtils {
 
             return filteredBitmap
         }
+
+        fun convertBitmap2ByteArray(bitmap: Bitmap): ByteArray {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
+            return byteArrayOutputStream.toByteArray()
+        }
+
     }
 }

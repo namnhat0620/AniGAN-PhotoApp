@@ -8,5 +8,9 @@ enum class Routes(val route: String) {
     BRUSH_SCREEN("brush_screen"),
     HAIR_SCREEN("hair_screen"),
     ADD_TEXT("add_text"),
-    FILTER_TOOL("filter_tool")
+    FILTER_TOOL("filter_tool"),
+    LOGIN("login"),
+    SIGN_UP("sign_up"),
+    PROFILE("profile"),
+    PLAN("plan"),
 }

@@ -1,8 +1,12 @@
 package com.kltn.anigan.ui.shared.components
 
 import android.app.Activity
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -27,18 +31,15 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.domain.DocsViewModel
-import com.kltn.anigan.domain.enums.EditType
 import com.kltn.anigan.routes.Routes
+import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.UriUtils
 import com.yalantis.ucrop.UCrop
 import java.io.File
-import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 
 @Composable
-fun ListButton(navController: NavController, viewModel: DocsViewModel) {
+fun ListButton(navController: NavController, viewModel: DocsViewModel, isLoading: Boolean) {
     val context = LocalContext.current
-    val uri = encodeUri(viewModel.uri.value)
-    val isLoading = viewModel.isLoading.value
-
     val cropLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val resultCode = result.resultCode
@@ -46,7 +47,10 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel) {
             if (resultCode == Activity.RESULT_OK) {
                 val newUri = UCrop.getOutput(data!!)
                 if (newUri != null) {
-                    navController.navigate("${Routes.EDIT_SCREEN.route}?uri=$newUri&editType=${EditType.DEFAULT.type}")
+                    // Get des uri
+                    viewModel.uri.value = newUri.toString()
+                    viewModel.bitmap = BitmapUtils.getBitmapFromUri(newUri, context)
+                    navController.navigate(Routes.EDIT_SCREEN.route)
                 }
             }
         }
@@ -68,14 +72,7 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel) {
             FuncButton2(
                 R.drawable._crop, "Crop", isLoading
             ) {
-                val destinationFileName = "image_${System.currentTimeMillis()}.jpg"
-                val destinationUri = Uri.fromFile(File(context.cacheDir, destinationFileName))
-                val uCrop = UCrop.of(uri, destinationUri)
-                    .withAspectRatio(16F, 9F)
-
-                val uCropIntent = uCrop.getIntent(context)
-                cropLauncher.launch(uCropIntent)
-                viewModel.uri.value = destinationUri.toString()
+                cropActivity(context, viewModel, cropLauncher)
             }
             FuncButton2(
                 R.drawable.baseline_brush_24, "Brush", isLoading
@@ -85,12 +82,12 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel) {
             FuncButton2(
                 R.drawable.baseline_text_fields_24, "Text", isLoading
             ) {
-                navController.navigate("${Routes.ADD_TEXT.route}?uri=$uri")
+                navController.navigate(Routes.ADD_TEXT.route)
             }
             FuncButton2(
                 R.drawable.baseline_auto_fix_high_24, "Filters", isLoading
             ) {
-                navController.navigate("${Routes.FILTER_TOOL.route}?uri=$uri")
+                navController.navigate(Routes.FILTER_TOOL.route)
             }
         }
 
@@ -101,10 +98,11 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel) {
 private fun FuncButton2(imageId: Int, text: String, isLoading: Boolean, onClick: () -> Unit = {}) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable(
-            enabled = !isLoading
-        ) { onClick() }
-            .alpha(if(isLoading) 0.4f else 1f)
+        modifier = Modifier
+            .clickable(
+                enabled = !isLoading
+            ) { onClick() }
+            .alpha(if (isLoading) 0.4f else 1f)
     ) {
         Image(
             painter = painterResource(id = imageId),
@@ -119,5 +117,27 @@ private fun FuncButton2(imageId: Int, text: String, isLoading: Boolean, onClick:
             fontSize = 13.sp,
             lineHeight = 15.sp
         )
+    }
+}
+
+private fun cropActivity(
+    context: Context,
+    viewModel: DocsViewModel,
+    cropLauncher: ManagedActivityResultLauncher<Intent, ActivityResult>
+) {
+    val destinationFileName = "image_${System.currentTimeMillis()}.jpg"
+    val destinationUri = Uri.fromFile(File(context.cacheDir, destinationFileName))
+
+    // Get src uri
+    if (viewModel.bitmap != null) {
+        UriUtils.bitmapToUri(context, viewModel.bitmap!!)?.let {
+            val uri = it
+            viewModel.uri.value = it.toString()
+
+            // Crop
+            val uCrop = UCrop.of(uri, destinationUri)
+            val uCropIntent = uCrop.getIntent(context)
+            cropLauncher.launch(uCropIntent)
+        }
     }
 }

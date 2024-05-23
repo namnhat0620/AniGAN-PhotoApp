@@ -3,7 +3,6 @@ package com.kltn.anigan.ui
 import android.graphics.Bitmap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,10 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +32,6 @@ import androidx.compose.ui.input.pointer.RequestDisallowInterceptTouchEvent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -57,15 +55,19 @@ fun HairScreen(
     navController: NavController = rememberNavController(),
     viewModel: DocsViewModel,
 ) {
-    val uri = viewModel.uri.value
-    if (uri.isEmpty()) return
-
     val context = LocalContext.current
     val screenWidth = getScreenWidth(context)
-    val bitmap = viewModel.bitmap.value
+    val bitmap = viewModel.bitmap
+    if (bitmap == null) navController.popBackStack()
 
     val croppedSize =
         BitmapUtils.cropWidthHeight(bitmap?.width, bitmap?.height, screenWidth.toDouble())
+
+    LaunchedEffect(Unit) {
+        viewModel.x.floatValue = (croppedSize[0].toInt() / 2).toFloat()
+        viewModel.y.floatValue = (croppedSize[1].toInt() / 2).toFloat()
+    }
+
     val scaledBitmap = bitmap?.let {
         Bitmap.createScaledBitmap(
             it,
@@ -108,7 +110,11 @@ fun HairScreen(
             }
             AndroidView(
                 factory = {
-                    MyCanvasView(context = it, viewModel = viewModel, editType = EditType.BRUSH).apply {
+                    MyCanvasView(
+                        context = it,
+                        viewModel = viewModel,
+                        editType = EditType.BRUSH
+                    ).apply {
                         this.bitmap = bitmap
                     }
                 },
@@ -128,7 +134,7 @@ fun HairScreen(
                             )
                             val combinedBitmap =
                                 createSingleImageFromMultipleImages(bitmap, scaledBitmap2)
-                            viewModel.bitmap.value = combinedBitmap
+                            viewModel.bitmap = combinedBitmap
                             navController.navigate(Routes.EDIT_SCREEN.route)
                         }
                     }
@@ -149,7 +155,6 @@ private fun Footer(
     viewModel: DocsViewModel,
     navController: NavController = rememberNavController(),
 ) {
-    val undoCanvas = viewModel.undoCanvas.value
     Column(
         Modifier.background(Color.Black)
     ) {
@@ -165,22 +170,6 @@ private fun Footer(
             viewModel.hairResourceId.intValue = it
         }
         Spacer(Modifier.height(12.dp))
-        OutlinedButton(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = {
-                viewModel.undoCanvas.value = true
-            },
-            enabled = !undoCanvas
-        ) {
-            Text(
-                text = "Undo",
-                color = Color.White.copy(alpha = if (!undoCanvas) 1f else 0.4f),
-                fontSize = 20.sp,
-                modifier = Modifier.clickable {
-                    viewModel.undoCanvas.value = true
-                }
-            )
-        }
         BaseFooter(navController = navController, viewModel = viewModel)
     }
 }

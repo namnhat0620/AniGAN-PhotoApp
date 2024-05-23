@@ -12,7 +12,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,16 +19,23 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -39,24 +45,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
-import coil.compose.rememberImagePainter
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
-import com.bumptech.glide.integration.compose.placeholder
 import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.UploadRequestBody
 import com.kltn.anigan.domain.response.UploadUserImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
-import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
-import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.BitmapUtils.Companion.convertBitmap2ByteArray
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 import com.kltn.anigan.utils.UriUtils.Companion.getFileName
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
+import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -70,7 +77,21 @@ import java.util.Objects
 
 @Composable
 fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
-    val isLoading = viewModel.isLoading.value
+    val context = LocalContext.current
+    val url = viewModel.url.value
+    val bitmap = viewModel.bitmap
+    var isLoading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(bitmap, url) {
+        if (bitmap != null && url.isEmpty()) {
+            launch {
+                generateImageFromBitmap(context, viewModel) {
+                    isLoading = it
+                }
+            }
+        }
+    }
+
     Column(
         modifier = Modifier
             .background(colorResource(id = R.color.black))
@@ -78,39 +99,24 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Column {
-            Header(
-                setCapturedImageUri = { newUri ->
-                    if (newUri != null) {
-//                        capturedImageUri = newUri
-                    }
-                },
-                navController
-            )
-            InsertImage(viewModel)
-//            var list by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
-
-//            getRefImage { updatedList ->
-//                // Update the contents of the list variable with the data returned from getRefImage
-//                list = updatedList
-//            }
-
-
+            Header(navController, viewModel)
+            InsertImage(viewModel, isLoading) {
+                isLoading = it
+            }
         }
 
-        Column{
+        Column {
             Title(text1 = "Style", text2 = "")
             RefLibrary(viewModel)
             Spacer(Modifier.height(12.dp))
-            Row (
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp)
             )
             {
                 GenerateSetting(
-                    viewModel.url.value,
-                    "",
-                    isLoading,
+                    url.isNotEmpty(),
                     navController
                 )
             }
@@ -119,9 +125,13 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
     }
 }
 
+@OptIn(ExperimentalGlideComposeApi::class)
+@SuppressLint("HardwareIds")
 @Composable
 private fun InsertImage(
-    viewModel: DocsViewModel
+    viewModel: DocsViewModel,
+    isLoading: Boolean,
+    onLoadingChange: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -134,18 +144,19 @@ private fun InsertImage(
 
     val cameraLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
-            val bitmap = BitmapUtils.getBitmapFromUri(uri, context)
+            val bitmap = getBitmapFromUri(uri, context)
                 ?: return@rememberLauncherForActivityResult
-            viewModel.bitmap.value = bitmap
-            // Save squareBitmap to file and get the new URI
-//            val bitmapAfterRotate = rotate90(bitmap)
+            viewModel.bitmap = bitmap
             val newUri = saveBitmapAndGetUri(context, bitmap)
             viewModel.uri.value = newUri.toString()
             if (newUri != null) {
                 // Upload file to server
-                generateImage(context, viewModel)
+                generateImage(context, viewModel) {
+                    onLoadingChange(it)
+                }
             }
         }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {
@@ -176,11 +187,11 @@ private fun InsertImage(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (viewModel.isLoading.value) {
+        if (isLoading) {
             CircularProgressIndicator()
         } else if (viewModel.url.value.isNotEmpty()) {
-            Image(
-                painter = rememberImagePainter(viewModel.url.value),
+            GlideImage(
+                model = viewModel.url.value,
                 contentDescription = null,
                 contentScale = ContentScale.Inside
             )
@@ -225,39 +236,67 @@ fun Context.createImageFile(): File {
 
 @Composable
 private fun Header(
-    setCapturedImageUri: (Uri?) -> Unit,
     navController: NavController,
-    modifier: Modifier = Modifier
+    viewModel: DocsViewModel
 ) {
+    val context = LocalContext.current
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
         onResult = { uri ->
-            setCapturedImageUri(uri)
+            uri?.let {
+                viewModel.bitmap = getBitmapFromUri(it, context)
+                viewModel.url.value = ""
+            }
         })
 
     Row(
-        modifier
-            .height(50.dp)
+        Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 16.dp)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .background(colorResource(id = R.color.black)),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.icon_back),
-            contentDescription = "icon_change_image",
-            modifier
-                .size(17.dp)
-                .clickable {
-                    navController.popBackStack()
-                },
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.icon_back),
+                contentDescription = "icon_change_image",
+                Modifier
+                    .size(20.dp)
+                    .clickable {
+                        navController.popBackStack()
+                    },
+            )
+            Spacer(Modifier.width(15.dp))
+            //Icon notification
+            OutlinedButton(
+                onClick = {},
+                modifier = Modifier
+                    .padding(0.dp)
+                    .height(40.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.baseline_energy_savings_leaf_24),
+                    contentDescription = ""
+                )
+                Spacer(Modifier.width(1.dp))
+                Text(
+                    text = "${viewModel.numberOfGeneration.intValue}",
+                    color = Color.White
+                )
+            }
+        }
+
         Image(
             painter = painterResource(id = R.drawable.outline_image_24),
             contentDescription = "icon_change_image",
-            modifier
-                .size(30.dp)
-                .clickable { galleryLauncher.launch("image/*") }
+            Modifier
+                .size(35.dp)
+                .clickable {
+                    galleryLauncher.launch("image/*")
+                }
         )
     }
 }
@@ -265,10 +304,15 @@ private fun Header(
 @SuppressLint("Recycle")
 private fun generateImage(
     context: Context,
-    viewModel: DocsViewModel
+    viewModel: DocsViewModel,
+    onLoadingChange: (Boolean) -> Unit
 ) {
-    viewModel.isLoading.value = true
-    val uri = encodeUri(viewModel.uri.value)
+    onLoadingChange(true)
+    val uri = if (viewModel.uri.value.equals(Uri.EMPTY)) {
+        Uri.EMPTY
+    } else {
+        encodeUri(viewModel.uri.value)
+    }
 
     if (uri == Uri.EMPTY) {
         Toast.makeText(context, "Choose an image first!", Toast.LENGTH_LONG).show()
@@ -300,17 +344,87 @@ private fun generateImage(
             call: Call<UploadUserImageResponse>,
             response: Response<UploadUserImageResponse>
         ) {
-            response.body()?.let {
-                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                viewModel.url.value = it.url
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    viewModel.url.value = it.url
+                }
+                onLoadingChange(false)
+            } else {
+                // Handle error response
+                val errorMessage = try {
+                    response.errorBody()?.string() ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error parsing error message"
+                }
+
+                // Parse error message from JSON if needed
+                val jsonObj = JSONObject(errorMessage)
+                val message = jsonObj.optString("message", "Unknown error")
+
+                Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+                onLoadingChange(false)
             }
-            viewModel.isLoading.value = false
         }
 
         override fun onFailure(call: Call<UploadUserImageResponse>, t: Throwable) {
             Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
                 .show()
-            viewModel.isLoading.value = true
+            onLoadingChange(false)
+        }
+    })
+}
+
+@SuppressLint("Recycle")
+private fun generateImageFromBitmap(
+    context: Context,
+    viewModel: DocsViewModel,
+    onLoadingChange: (Boolean) -> Unit
+) {
+    onLoadingChange(true)
+    val byteArray = convertBitmap2ByteArray(viewModel.bitmap!!)
+
+    // Create a RequestBody from the ByteArray
+    val body = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull(), 0, byteArray.size)
+
+    UploadApi().uploadImage(
+        MultipartBody.Part.createFormData(
+            "file",
+            "image_${System.currentTimeMillis()}.jpg",
+            body
+        ),
+        "".toRequestBody("text/plain".toMediaTypeOrNull()),
+    ).enqueue(object : Callback<UploadUserImageResponse> {
+        override fun onResponse(
+            call: Call<UploadUserImageResponse>,
+            response: Response<UploadUserImageResponse>
+        ) {
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    viewModel.url.value = it.url
+                }
+                onLoadingChange(false)
+
+            } else {
+                // Handle error response
+                val errorMessage = try {
+                    response.errorBody()?.string() ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error parsing error message"
+                }
+
+                // Parse error message from JSON if needed
+                val jsonObj = JSONObject(errorMessage)
+                val message = jsonObj.optString("message", "Unknown error")
+
+                Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+                onLoadingChange(false)
+            }
+        }
+
+        override fun onFailure(call: Call<UploadUserImageResponse>, t: Throwable) {
+            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                .show()
+            onLoadingChange(false)
         }
     })
 }

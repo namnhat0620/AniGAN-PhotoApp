@@ -1,27 +1,26 @@
 package com.kltn.anigan.api
 
 import com.kltn.anigan.api.BaseURL.BaseURL.BASE_URL
-import com.kltn.anigan.domain.request.TransformRequest
-import com.kltn.anigan.domain.response.TransformResponse
+import com.kltn.anigan.domain.response.LoginResponse
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Body
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import java.util.concurrent.TimeUnit
 
-interface TransformApi {
-    @POST("image/transform")
-    fun transformImage(
-        @Header("Authorization") token: String?,
-        @Body body: TransformRequest
-    ): Call<TransformResponse>
+interface RefreshTokenApi {
+    @POST("/keycloak/refresh")
+    @Headers("Content-Type: application/json")
+    fun refresh(
+        @Header("Authorization") token: String?
+    ): Call<LoginResponse>
 
     companion object {
-        operator fun invoke(): TransformApi{
+        operator fun invoke(): RefreshTokenApi{
             val interceptor = HttpLoggingInterceptor()
             interceptor.setLevel(HttpLoggingInterceptor.Level.BODY) // Set log level to BODY to log request and response data
 
@@ -37,7 +36,7 @@ interface TransformApi {
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build()
-                .create(TransformApi::class.java)
+                .create(RefreshTokenApi::class.java)
         }
     }
 }

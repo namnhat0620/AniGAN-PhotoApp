@@ -3,6 +3,7 @@ package com.kltn.anigan.ui
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -46,12 +47,11 @@ import coil.compose.rememberImagePainter
 import com.kltn.anigan.R
 import com.kltn.anigan.api.TransformApi
 import com.kltn.anigan.domain.DocsViewModel
-import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.domain.request.TransformRequest
 import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.ui.shared.components.ListButton
-import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
+import com.kltn.anigan.utils.DataStoreManager
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
 import com.kltn.anigan.utils.UriUtils.Companion.shareImage
@@ -59,9 +59,12 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.IOException
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(DelicateCoroutinesApi::class)
@@ -71,33 +74,19 @@ fun AIResultScreen(
     viewModel: DocsViewModel
 ) {
     val context = LocalContext.current
-    var resultList by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
     val focusURL = viewModel.resultUrl.value
     val shareImageLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {}
     val url = viewModel.url.value
-    val isLoading = viewModel.isLoading.value
+    var isLoading by remember { mutableStateOf(false) }
 
     if (url.isEmpty()) {
         navController.popBackStack()
         return
     }
-//    for (i in 0 until 3) {
-        LaunchedEffect(Unit) {
-            viewModel.isLoading.value = true
-            transformImage(context, viewModel) {
-                resultList += it
-            }
-        }
-//    }
-    if (focusURL.isNotEmpty()) {
-        GlobalScope.launch(Dispatchers.IO) {
-            try {
-                viewModel.bitmap.value =
-                    getBitmapFromUrl(context = context, urlString = viewModel.resultUrl.value)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    LaunchedEffect(Unit) {
+        transformImage(context, viewModel, navController) {
+            isLoading = it
         }
     }
 
@@ -106,7 +95,7 @@ fun AIResultScreen(
     ) {
         Header(navController = navController)
 
-        if (focusURL.isNotEmpty()) {
+        if (!isLoading) {
             Image(
                 painter = rememberImagePainter(focusURL),
                 contentDescription = null,
@@ -169,7 +158,7 @@ fun AIResultScreen(
                                 enabled = !isLoading
                             ) {
                                 GlobalScope.launch(Dispatchers.IO) {
-                                    saveBitmapAndGetUri(context, viewModel.bitmap.value!!)
+                                    saveBitmapAndGetUri(context, viewModel.bitmap!!)
                                 }
                                 Toast
                                     .makeText(context, "Successfully", Toast.LENGTH_SHORT)
@@ -179,7 +168,7 @@ fun AIResultScreen(
                     )
                 }
                 Spacer(modifier = Modifier.height(20.dp))
-                ListButton(navController, viewModel)
+                ListButton(navController, viewModel, isLoading)
                 Spacer(modifier = Modifier.height(20.dp))
             }
         }
@@ -194,7 +183,7 @@ fun CustomButton(
     modifier: Modifier = Modifier
 ) {
     Button(
-        onClick = { /*TODO*/ },
+        onClick = { },
         modifier
             .width(160.dp)
             .height(46.dp),
@@ -230,7 +219,7 @@ private fun Header(navController: NavController) {
             contentDescription = "icon_change_image",
             Modifier
                 .padding(start = 12.dp, top = 16.dp)
-                .size(17.dp)
+                .size(20.dp)
                 .clickable {
                     navController.popBackStack()
                 },
@@ -238,34 +227,94 @@ private fun Header(navController: NavController) {
     }
 }
 
-@SuppressLint("Recycle")
+@OptIn(DelicateCoroutinesApi::class)
+@SuppressLint("Recycle", "HardwareIds")
 private fun transformImage(
     context: Context,
     viewModel: DocsViewModel,
-    onResult: (ImageClassFromInternet) -> Unit
+    navController: NavController,
+    onLoadingChange: (Boolean) -> Unit
 ) {
     val sourceUrl = viewModel.url.value
+    onLoadingChange(true)
 
-    TransformApi().transformImage(
-        TransformRequest(sourceImg = sourceUrl, referenceId = viewModel.reference.intValue)
-    ).enqueue(object : Callback<TransformResponse> {
-        override fun onResponse(
-            call: Call<TransformResponse>,
-            response: Response<TransformResponse>
-        ) {
-            response.body()?.let {
-                Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
-                onResult(it.data)
-                viewModel.resultUrl.value = it.data.url
-                viewModel.isLoading.value = false
+    try {
+        TransformApi().transformImage(
+            if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
+            else "",
+            TransformRequest(
+                sourceImg = sourceUrl,
+                referenceId = viewModel.reference.intValue,
+                mobileId = Settings.Secure.getString(
+                    context.contentResolver,
+                    Settings.Secure.ANDROID_ID
+                )
+            )
+        ).enqueue(object : Callback<TransformResponse> {
+            override fun onResponse(
+                call: Call<TransformResponse>,
+                response: Response<TransformResponse>
+            ) {
+                if (response.isSuccessful) {
+                    response.body()?.let {
+                        Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                        viewModel.resultUrl.value = it.data.url
+
+                        if (viewModel.resultUrl.value.isNotEmpty()) {
+                            GlobalScope.launch(Dispatchers.IO) {
+                                viewModel.bitmap =
+                                    getBitmapFromUrl(
+                                        context = context,
+                                        urlString = viewModel.resultUrl.value
+                                    )
+                                viewModel.url.value = viewModel.resultUrl.value
+
+                                withContext(Dispatchers.Default) {
+                                    DataStoreManager.getNoOfGeneration(context)
+                                        .collect { noOfGeneration ->
+                                            noOfGeneration?.let {
+                                                DataStoreManager.saveNoOfGeneration(
+                                                    context,
+                                                    (Integer.parseInt(noOfGeneration) - 1).toString()
+                                                )
+                                            }
+                                        }
+                                }
+                            }
+                        }
+                        onLoadingChange(false)
+                    }
+                } else {
+                    // Handle error response
+                    val errorMessage = try {
+                        response.errorBody()?.string() ?: "Unknown error"
+                    } catch (e: Exception) {
+                        "Error parsing error message"
+                    }
+
+                    // Parse error message from JSON if needed
+                    val jsonObj = JSONObject(errorMessage)
+                    val message = jsonObj.optString("message", "Unknown error")
+
+                    Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+                    navController.popBackStack()
+                    onLoadingChange(false)
+                }
             }
-        }
 
-        override fun onFailure(call: Call<TransformResponse>, t: Throwable) {
-            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
-                .show()
-        }
-    })
+            override fun onFailure(call: Call<TransformResponse>, t: Throwable) {
+                Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                    .show()
+                navController.popBackStack()
+                onLoadingChange(false)
+            }
+        })
+    } catch (e: IOException) {
+        Toast.makeText(context, "Fail by ${e.message!!}!", Toast.LENGTH_LONG)
+            .show()
+        navController.popBackStack()
+        onLoadingChange(false)
+    }
 }
 
 @OptIn(DelicateCoroutinesApi::class)

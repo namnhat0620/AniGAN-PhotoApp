@@ -1,5 +1,6 @@
 package com.kltn.anigan.ui
 
+import android.content.Context
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,15 +12,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,32 +40,46 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
-import com.kltn.anigan.api.LoadImageApi
+import com.kltn.anigan.api.RefreshTokenApi
 import com.kltn.anigan.domain.DocsViewModel
-import com.kltn.anigan.domain.ImageClassFromInternet
-import com.kltn.anigan.domain.enums.ImageType
-import com.kltn.anigan.domain.response.LoadImageResponse
+import com.kltn.anigan.domain.response.LoginResponse
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
+import com.kltn.anigan.utils.DataStoreManager
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 @Composable
-fun MainScreen(navController: NavController?, viewModel: DocsViewModel) {
-    var userImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
-    var aniganImages by remember { mutableStateOf<List<ImageClassFromInternet>>(emptyList()) }
+fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
+    val context = LocalContext.current
 
-    getImage(type = ImageType.USER_IMAGE.type) { updatedList ->
-        // Update the contents of the list variable with the data returned from getRefImage
-        userImages = updatedList
-    }
+    LaunchedEffect(Unit) {
+        coroutineScope {
+            launch {
+                DataStoreManager.getRefreshToken(context).collect {
+                    it?.let {
+                        if (it.isNotEmpty()) {
+                            refreshToken(it, context, viewModel)
+                        }
+                    }
+                }
+            }
 
-    getImage(type = ImageType.ANIGAN_IMAGE.type) { updatedList ->
-        // Update the contents of the list variable with the data returned from getRefImage
-        aniganImages = updatedList
+            launch {
+                viewModel.loadMoreUserImages()
+            }
+
+            launch {
+                viewModel.loadMoreAniganImages()
+            }
+        }
     }
 
     Column(
@@ -73,7 +92,7 @@ fun MainScreen(navController: NavController?, viewModel: DocsViewModel) {
             modifier = Modifier
                 .background(colorResource(id = R.color.black))
         ) {
-            Header()
+            Header(navController = navController, viewModel)
             ListButton(navController = navController, viewModel)
         }
         Column(
@@ -84,23 +103,49 @@ fun MainScreen(navController: NavController?, viewModel: DocsViewModel) {
             Banner()
 
             Title(text1 = "Edit Your Photos", text2 = "")
-            PhotoLibrary(userImages)
+            PhotoLibrary(viewModel.userImages, viewModel, navController) {
+                viewModel.loadMoreUserImages()
+            }
 
             Title(text1 = "History", text2 = "")
-            PhotoLibrary(aniganImages)
+            PhotoLibrary(viewModel.aniganImages, viewModel, navController) {
+                viewModel.loadMoreAniganImages()
+            }
         }
     }
 }
 
 @Composable
-private fun Header(modifier: Modifier = Modifier) {
+private fun Header(navController: NavController?, viewModel: DocsViewModel) {
     Row(
-        modifier
+        Modifier
             .height(50.dp)
             .fillMaxWidth()
             .background(colorResource(id = R.color.black)),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(text = "Anigan", fontSize = 25.sp, color = Color.White)
+        //Icon notification
+        OutlinedButton(
+            onClick = {
+                if (viewModel.username.value.isEmpty()) {
+                    navController?.navigate(Routes.LOGIN.route)
+                } else {
+                    navController?.navigate(Routes.PROFILE.route)
+                }
+            }
+        ) {
+            if (viewModel.username.value.isNotEmpty()) {
+                Image(
+                    painter = painterResource(id = R.drawable.round_account_circle_24),
+                    contentDescription = ""
+                )
+                Spacer(Modifier.width(1.dp))
+                Text(text = viewModel.username.value, color = Color.White)
+            } else {
+                Text(text = "Login", color = Color.White)
+            }
+        }
     }
 }
 
@@ -148,7 +193,7 @@ private fun ListButton(navController: NavController? = null, viewModel: DocsView
         contract = ActivityResultContracts.GetContent(),
         onResult = {
             it?.let {
-                viewModel.bitmap.value = getBitmapFromUri(context = context, uri = it)
+                viewModel.bitmap = getBitmapFromUri(context = context, uri = it)
                 viewModel.uri.value = it.toString()
                 navController?.navigate("$route?uri=$it")
             }
@@ -197,23 +242,46 @@ private fun Banner(modifier: Modifier = Modifier) {
     )
 }
 
-private fun getImage(type: Int, onImageListLoaded: (List<ImageClassFromInternet>) -> Unit) {
-    LoadImageApi().getRefImage(type).enqueue(object :
-        Callback<LoadImageResponse> {
+@OptIn(DelicateCoroutinesApi::class)
+private fun refreshToken(token: String, context: Context, viewModel: DocsViewModel) {
+    RefreshTokenApi().refresh("Bearer $token").enqueue(object :
+        Callback<LoginResponse> {
         override fun onResponse(
-            call: Call<LoadImageResponse>,
-            response: Response<LoadImageResponse>
+            call: Call<LoginResponse>,
+            response: Response<LoginResponse>
         ) {
             if (response.isSuccessful) {
                 response.body()?.let {
-                    onImageListLoaded(it.data.list)
+                    viewModel.accessToken.value = it.access_token
+                    viewModel.refreshToken.value = it.refresh_token
+
+                    GlobalScope.launch {
+                        DataStoreManager.getUsername(context).collect { username ->
+                            username?.let {
+                                viewModel.username.value = username
+                            }
+                        }
+
+                        DataStoreManager.getNoOfGeneration(context).collect { numOfGeneration ->
+                            numOfGeneration?.let {
+                                viewModel.numberOfGeneration.intValue =
+                                    Integer.parseInt(numOfGeneration)
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Clear login info
+                GlobalScope.launch {
+                    DataStoreManager.clearUsername(context)
+                    DataStoreManager.clearRefreshToken(context)
+                    DataStoreManager.clearNoOfGeneration(context)
                 }
             }
         }
 
-        override fun onFailure(call: Call<LoadImageResponse>, t: Throwable) {
+        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
             Log.i("Load Image Response", "onFailure: ${t.message}")
         }
     })
 }
-
