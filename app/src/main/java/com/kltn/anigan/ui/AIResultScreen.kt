@@ -52,6 +52,7 @@ import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.ui.shared.components.ListButton
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import com.kltn.anigan.utils.DataStoreManager
+import com.kltn.anigan.utils.HardwareUtils
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
 import com.kltn.anigan.utils.UriUtils.Companion.saveImageFromUrl
 import com.kltn.anigan.utils.UriUtils.Companion.shareImage
@@ -91,7 +92,8 @@ fun AIResultScreen(
     }
 
     Column(
-        Modifier.background(Color.Black)
+        Modifier.background(Color.Black).fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Header(navController = navController)
 
@@ -119,8 +121,6 @@ fun AIResultScreen(
 //        PhotoLibrary(itemList = resultList) {
 //            viewModel.resultUrl.value = it
 //        }
-
-        Spacer(modifier = Modifier.height(20.dp))
 
         Column(
             Modifier.fillMaxSize(),
@@ -200,7 +200,7 @@ fun CustomButton(
                 modifier.size(16.dp)
             )
             Spacer(modifier = modifier.width(6.dp))
-            Text(text = text, fontSize = 18.sp)
+            Text(text = text, fontSize = 14.sp)
         }
     }
 }
@@ -245,10 +245,7 @@ private fun transformImage(
             TransformRequest(
                 sourceImg = sourceUrl,
                 referenceId = viewModel.reference.intValue,
-                mobileId = Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.ANDROID_ID
-                )
+                mobileId = HardwareUtils.getMobileId(context)
             )
         ).enqueue(object : Callback<TransformResponse> {
             override fun onResponse(

@@ -34,12 +34,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.SignUpApi
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.SignUpRequestBody
 import com.kltn.anigan.routes.Routes
+import com.kltn.anigan.ui.shared.components.ConditionRow
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -48,16 +50,40 @@ import retrofit2.Response
 fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
     var passwordVisibility by remember { mutableStateOf(false) }
-    var password by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
+    var confirmPasswordVisibility by remember { mutableStateOf(false) }
+
+    //Validate
+    val username = viewModel.username
+    val usernameError by viewModel.usernameError.collectAsStateWithLifecycle()
+
+    val email = viewModel.email
+    val emailError by viewModel.emailError.collectAsStateWithLifecycle()
+
+    val password = viewModel.password
+    val passwordError by viewModel.passwordError.collectAsStateWithLifecycle()
+
+    val confirmPassword = viewModel.confirmPassword
+    val confirmPasswordError by viewModel.confirmPasswordError.collectAsStateWithLifecycle()
+
+    val firstName = viewModel.firstName
+    val firstNameError by viewModel.firstNameError.collectAsStateWithLifecycle()
+
+    val lastName = viewModel.lastName
+    val lastNameError by viewModel.lastNameError.collectAsStateWithLifecycle()
+
     val isEnabledSignUp =
-        viewModel.username.value.isNotEmpty() &&
-                password.isNotEmpty() &&
-                email.isNotEmpty() &&
-                firstName.isNotEmpty() &&
-                lastName.isNotEmpty()
+                usernameError.successful &&
+                emailError.successful &&
+                passwordError.successful &&
+                confirmPasswordError.successful &&
+                firstNameError.successful &&
+                lastNameError.successful
+
+//                username.isNotBlank() &&
+//                password.isNotBlank() &&
+//                email.isNotEmpty() &&
+//                firstName.isNotEmpty() &&
+//                lastName.isNotEmpty()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -82,58 +108,65 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
         Spacer(modifier = Modifier.height(4.dp))
 
         OutlinedTextField(
-            value = viewModel.username.value,
-            onValueChange = {
-                viewModel.username.value = it
-            },
+            value = username,
+            onValueChange = viewModel::changeUsername,
+            isError = username.isNotEmpty() && !usernameError.successful,
             label = {
                 Text(text = "Username")
             },
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(username.isNotEmpty() && !usernameError.successful) {
+            ConditionRow(condition = "Invalid username")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = email,
-            onValueChange = {
-                email = it
-            },
+            onValueChange = viewModel::changeEmail,
+            isError = email.isNotEmpty() && !emailError.successful,
             label = {
                 Text(text = "Email")
             },
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(email.isNotEmpty() && !emailError.successful) {
+            ConditionRow(condition = "Invalid email address")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = firstName,
-            onValueChange = {
-                firstName = it
-            },
+            onValueChange = viewModel::changeFirstName,
+            isError = firstName.isNotEmpty() && !firstNameError.successful,
             label = {
                 Text(text = "First name")
             },
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(firstName.isNotEmpty() && !firstNameError.successful) {
+            ConditionRow(condition = "Invalid firstname")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = lastName,
-            onValueChange = {
-                lastName = it
-            },
+            onValueChange = viewModel::changeLastName,
+            isError = lastName.isNotEmpty() && !lastNameError.successful,
             label = {
                 Text(text = "Last name")
             },
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(lastName.isNotEmpty() && !lastNameError.successful) {
+            ConditionRow(condition = "Invalid lastname")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = password,
-            onValueChange = {
-                password = it
-            },
+            onValueChange = viewModel::changePassword,
+            isError = password.isNotEmpty() && !passwordError.successful,
             label = {
                 Text(text = "Password")
             },
@@ -152,16 +185,49 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(password.isNotEmpty() && !passwordError.successful) {
+            ConditionRow(condition = if (
+                password.contains(" ") ||
+                password.contains("\t") ||
+                password.contains("\n")
+            ) "Invalid password"
+                else "Please enter at least 6 characters"
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+
+        // Confirm password
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = viewModel::changeConfirmPassword,
+            isError = confirmPassword.isNotEmpty() && !confirmPasswordError.successful,
+            label = {
+                Text(text = "Confirm password")
+            },
+            visualTransformation = if (confirmPasswordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (confirmPasswordVisibility)
+                    R.drawable.baseline_visibility_off_24
+                else R.drawable.round_visibility_24
+
+                IconButton(onClick = {
+                    confirmPasswordVisibility = !confirmPasswordVisibility
+                }) {
+                    Image(painter = painterResource(id = image), "")
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+        if(confirmPassword.isNotEmpty() && !confirmPasswordError.successful) {
+            ConditionRow(condition = "Incorrect password")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedButton(
             onClick = {
                 signUp(
                     context,
                     viewModel,
-                    password,
-                    firstName,
-                    lastName,
-                    email,
                     navController
                 )
             },
@@ -191,19 +257,15 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
 private fun signUp(
     context: Context,
     viewModel: DocsViewModel,
-    password: String,
-    firstName: String,
-    lastName: String,
-    email: String,
     navController: NavController
 ) {
     SignUpApi().signup(
         SignUpRequestBody(
-            username = viewModel.username.value,
-            password = password,
-            email = email,
-            firstName = firstName,
-            lastName = lastName,
+            username = viewModel.username,
+            password = viewModel.password,
+            email = viewModel.email,
+            firstName = viewModel.firstName,
+            lastName = viewModel.lastName,
             enabled = true
         )
     ).enqueue(object : Callback<Void> {
@@ -213,6 +275,7 @@ private fun signUp(
         ) {
             if (response.isSuccessful) {
                 Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                viewModel.resetAll(context, viewModel)
                 navController.navigate(Routes.LOGIN.route)
             } else {
                 Toast.makeText(context, response.message(), Toast.LENGTH_SHORT).show()

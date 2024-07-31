@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,7 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -56,6 +57,7 @@ import com.kltn.anigan.ui.shared.components.GenerateSetting
 import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.utils.BitmapUtils.Companion.convertBitmap2ByteArray
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
+import com.kltn.anigan.utils.HardwareUtils
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 import com.kltn.anigan.utils.UriUtils.Companion.getFileName
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
@@ -98,11 +100,10 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
             .fillMaxHeight(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Column {
-            Header(navController, viewModel)
-            InsertImage(viewModel, isLoading) {
-                isLoading = it
-            }
+        Header(navController, viewModel)
+
+        InsertImage(viewModel, isLoading) {
+            isLoading = it
         }
 
         Column {
@@ -301,7 +302,7 @@ private fun Header(
     }
 }
 
-@SuppressLint("Recycle")
+@SuppressLint("Recycle", "HardwareIds")
 private fun generateImage(
     context: Context,
     viewModel: DocsViewModel,
@@ -333,12 +334,15 @@ private fun generateImage(
 
     val body = UploadRequestBody(file, "image")
     UploadApi().uploadImage(
+        if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
+        else "",
         MultipartBody.Part.createFormData(
             "file",
             file.name,
             body
         ),
         "".toRequestBody("text/plain".toMediaTypeOrNull()),
+        HardwareUtils.getMobileId(context).toRequestBody("text/plain".toMediaTypeOrNull()),
     ).enqueue(object : Callback<UploadUserImageResponse> {
         override fun onResponse(
             call: Call<UploadUserImageResponse>,
@@ -387,12 +391,15 @@ private fun generateImageFromBitmap(
     val body = byteArray.toRequestBody("image/jpeg".toMediaTypeOrNull(), 0, byteArray.size)
 
     UploadApi().uploadImage(
+        if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
+        else "",
         MultipartBody.Part.createFormData(
             "file",
             "image_${System.currentTimeMillis()}.jpg",
             body
         ),
         "".toRequestBody("text/plain".toMediaTypeOrNull()),
+        HardwareUtils.getMobileId(context).toRequestBody("text/plain".toMediaTypeOrNull()),
     ).enqueue(object : Callback<UploadUserImageResponse> {
         override fun onResponse(
             call: Call<UploadUserImageResponse>,

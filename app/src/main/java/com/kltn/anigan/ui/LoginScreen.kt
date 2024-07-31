@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoginApi
@@ -41,6 +42,7 @@ import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.LoginRequestBody
 import com.kltn.anigan.domain.response.LoginResponse
 import com.kltn.anigan.routes.Routes
+import com.kltn.anigan.ui.shared.components.ConditionRow
 import com.kltn.anigan.utils.DataStoreManager
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -53,9 +55,14 @@ import retrofit2.Response
 @Composable
 fun LoginScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
+
+    val password = viewModel.password
     var passwordVisibility by remember { mutableStateOf(false) }
-    var password by remember { mutableStateOf("") }
-    val isEnabledLogin = viewModel.username.value.isNotEmpty() && password.isNotEmpty()
+    val passwordError by viewModel.passwordError.collectAsStateWithLifecycle()
+    val username = viewModel.username
+    val usernameError by viewModel.usernameError.collectAsStateWithLifecycle()
+
+    val isEnabledLogin = usernameError.successful && passwordError.successful
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -79,26 +86,27 @@ fun LoginScreen(navController: NavController, viewModel: DocsViewModel) {
         Spacer(modifier = Modifier.height(4.dp))
 
         OutlinedTextField(
-            value = viewModel.username.value,
-            onValueChange = {
-                viewModel.username.value = it
-            },
+            value = username,
+            onValueChange = viewModel::changeUsername,
+            isError = username.isNotEmpty() && !usernameError.successful,
             label = {
                 Text(text = "Username")
             },
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(username.isNotEmpty() && !usernameError.successful) {
+            ConditionRow(condition = "Invalid username")
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedTextField(
             value = password,
-            onValueChange = {
-                password = it
-            },
+            onValueChange = viewModel::changePassword,
             label = {
                 Text(text = "Password")
             },
             visualTransformation = if (passwordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
+            isError = password.isNotEmpty() && !passwordError.successful,
             trailingIcon = {
                 val image = if (passwordVisibility)
                     R.drawable.baseline_visibility_off_24
@@ -113,6 +121,15 @@ fun LoginScreen(navController: NavController, viewModel: DocsViewModel) {
             modifier = Modifier
                 .fillMaxWidth()
         )
+        if(password.isNotEmpty() && !passwordError.successful) {
+            ConditionRow(condition = if (
+                password.contains(" ") ||
+                password.contains("\t") ||
+                password.contains("\n")
+            ) "Invalid password"
+            else "Please enter at least 6 characters"
+            )
+        }
         Spacer(modifier = Modifier.height(4.dp))
         OutlinedButton(
             onClick = { login(context, viewModel, password, navController) },
@@ -148,7 +165,7 @@ fun login(
     navController: NavController
 ) {
     LoginApi().login(
-        LoginRequestBody(username = viewModel.username.value, password = password)
+        LoginRequestBody(username = viewModel.username, password = password)
     ).enqueue(object : Callback<LoginResponse> {
         override fun onResponse(
             call: Call<LoginResponse>,
@@ -160,7 +177,7 @@ fun login(
                     viewModel.accessToken.value = it.access_token
                     viewModel.refreshToken.value = it.refresh_token
                     GlobalScope.launch {
-                        DataStoreManager.saveUsername(context, viewModel.username.value)
+                        DataStoreManager.saveUsername(context, viewModel.username)
                         DataStoreManager.saveRefreshToken(context, it.refresh_token)
                     }
                     navController.navigate(Routes.MAIN_SCREEN.route)

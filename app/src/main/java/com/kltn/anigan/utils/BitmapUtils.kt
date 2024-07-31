@@ -6,6 +6,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
+import android.graphics.Matrix
 import android.graphics.Paint
 import android.net.Uri
 import android.util.DisplayMetrics
@@ -149,6 +150,12 @@ class BitmapUtils {
             val byteArrayOutputStream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream)
             return byteArrayOutputStream.toByteArray()
+        }
+
+        fun rotateBitmap(bitmap: Bitmap, angle: Float): Bitmap {
+            val matrix = Matrix()
+            matrix.postRotate(angle)
+            return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         }
 
     }

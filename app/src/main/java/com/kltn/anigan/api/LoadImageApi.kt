@@ -14,6 +14,7 @@ import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Query
 import retrofit2.http.Url
 import java.lang.reflect.Type
@@ -23,6 +24,7 @@ import java.net.URL
 interface LoadImageApi {
     @GET("/image")
     fun getRefImage(
+        @Header("Authorization") token: String?,
         @Query("type") type: Int,
         @Query("page") page: Int,
         @Query("limit") limit: Int = 5

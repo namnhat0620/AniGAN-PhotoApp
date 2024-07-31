@@ -1,7 +1,9 @@
 package com.kltn.anigan.ui
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -40,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.kltn.anigan.R
+import com.kltn.anigan.api.LoginApi
 import com.kltn.anigan.api.RefreshTokenApi
 import com.kltn.anigan.domain.DocsViewModel
+import com.kltn.anigan.domain.request.LoginRequestBody
 import com.kltn.anigan.domain.response.LoginResponse
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.components.PhotoLibrary
@@ -52,6 +56,7 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -67,20 +72,27 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
                     it?.let {
                         if (it.isNotEmpty()) {
                             refreshToken(it, context, viewModel)
+                        } else {
+                            loginAsTechnicalUser(context, viewModel)
                         }
                     }
                 }
             }
-
-            launch {
-                viewModel.loadMoreUserImages()
-            }
-
-            launch {
-                viewModel.loadMoreAniganImages()
-            }
         }
     }
+
+//    LaunchedEffect(Unit) {
+//        coroutineScope {
+//
+//            launch {
+//                viewModel.loadMoreUserImages(viewModel)
+//            }
+//
+//            launch {
+//                viewModel.loadMoreAniganImages(viewModel)
+//            }
+//        }
+//    }
 
     Column(
         modifier = Modifier
@@ -104,12 +116,12 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
 
             Title(text1 = "Edit Your Photos", text2 = "")
             PhotoLibrary(viewModel.userImages, viewModel, navController) {
-                viewModel.loadMoreUserImages()
+//                viewModel.loadMoreUserImages(viewModel)
             }
 
             Title(text1 = "History", text2 = "")
             PhotoLibrary(viewModel.aniganImages, viewModel, navController) {
-                viewModel.loadMoreAniganImages()
+//                viewModel.loadMoreAniganImages(viewModel)
             }
         }
     }
@@ -128,20 +140,20 @@ private fun Header(navController: NavController?, viewModel: DocsViewModel) {
         //Icon notification
         OutlinedButton(
             onClick = {
-                if (viewModel.username.value.isEmpty()) {
+                if (viewModel.username.isEmpty()) {
                     navController?.navigate(Routes.LOGIN.route)
                 } else {
                     navController?.navigate(Routes.PROFILE.route)
                 }
             }
         ) {
-            if (viewModel.username.value.isNotEmpty()) {
+            if (viewModel.username.isNotEmpty()) {
                 Image(
                     painter = painterResource(id = R.drawable.round_account_circle_24),
                     contentDescription = ""
                 )
                 Spacer(Modifier.width(1.dp))
-                Text(text = viewModel.username.value, color = Color.White)
+                Text(text = viewModel.username, color = Color.White)
             } else {
                 Text(text = "Login", color = Color.White)
             }
@@ -210,7 +222,7 @@ private fun ListButton(navController: NavController? = null, viewModel: DocsView
                 route = Routes.EDIT_SCREEN
                 galleryLauncher.launch("image/*")
             })
-        FuncButton(R.drawable.baseline_auto_awesome_24, "AI Tools",
+        FuncButton(R.drawable.baseline_auto_awesome_24, "Face2\nAnime",
             onClick = {
                 navController?.navigate(Routes.AI_TOOLS.route)
             })
@@ -258,7 +270,7 @@ private fun refreshToken(token: String, context: Context, viewModel: DocsViewMod
                     GlobalScope.launch {
                         DataStoreManager.getUsername(context).collect { username ->
                             username?.let {
-                                viewModel.username.value = username
+                                viewModel.changeUsername(username)
                             }
                         }
 
@@ -282,6 +294,51 @@ private fun refreshToken(token: String, context: Context, viewModel: DocsViewMod
 
         override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
             Log.i("Load Image Response", "onFailure: ${t.message}")
+        }
+    })
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+@SuppressLint("Recycle")
+private fun loginAsTechnicalUser(
+    context: Context,
+    viewModel: DocsViewModel
+) {
+    LoginApi().login(
+        LoginRequestBody(username = "technicaluser", password = "123")
+    ).enqueue(object : Callback<LoginResponse> {
+        override fun onResponse(
+            call: Call<LoginResponse>,
+            response: Response<LoginResponse>
+        ) {
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
+                    viewModel.accessToken.value = it.access_token
+                    viewModel.refreshToken.value = it.refresh_token
+                    GlobalScope.launch {
+                        DataStoreManager.saveRefreshToken(context, it.refresh_token)
+                    }
+                }
+            } else {
+                // Handle error response
+                val errorMessage = try {
+                    response.errorBody()?.string() ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error parsing error message"
+                }
+
+                // Parse error message from JSON if needed
+                val jsonObj = JSONObject(errorMessage)
+                val message = jsonObj.optString("message", "Unknown error")
+
+                Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+            Toast.makeText(context, "Fail by ${t.message!!}!", Toast.LENGTH_LONG)
+                .show()
         }
     })
 }

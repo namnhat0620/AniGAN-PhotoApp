@@ -139,9 +139,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
                 contentDescription = ""
             )
             Column {
-                viewModel.username.value.let {
-                    Text(text = it, color = Color.White, fontSize = 20.sp)
-                }
+                Text(text = viewModel.username, color = Color.White, fontSize = 20.sp)
                 Text(
                     text = viewModel.expiration.value,
                     color = Color.Yellow,
@@ -157,7 +155,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
             },
             modifier = Modifier.padding(0.dp)
         ) {
-            if (viewModel.username.value.isNotEmpty()) {
+            if (viewModel.username.isNotEmpty()) {
                 Image(
                     painter = painterResource(id = R.drawable.baseline_energy_savings_leaf_24),
                     contentDescription = ""
@@ -271,7 +269,7 @@ private fun logout(context: Context, viewModel: DocsViewModel, navController: Na
             call: Call<Void>,
             response: Response<Void>
         ) {
-            resetAll(context, viewModel)
+            viewModel.resetAll(context, viewModel)
             navController.navigate(Routes.MAIN_SCREEN.route)
         }
 
@@ -279,21 +277,4 @@ private fun logout(context: Context, viewModel: DocsViewModel, navController: Na
             Log.i("Logout failed", "onFailure: ${t.message}")
         }
     })
-}
-
-@OptIn(DelicateCoroutinesApi::class)
-private fun resetAll(context: Context, viewModel: DocsViewModel) {
-    viewModel.accessToken.value = ""
-    viewModel.username.value = ""
-    viewModel.firstName.value = ""
-    viewModel.lastName.value = ""
-    viewModel.hasPlan.value = false
-    viewModel.numberOfGeneration.intValue = 0
-    viewModel.expiration.value = ""
-
-    GlobalScope.launch {
-        DataStoreManager.clearUsername(context)
-        DataStoreManager.clearRefreshToken(context)
-        DataStoreManager.clearNoOfGeneration(context)
-    }
 }

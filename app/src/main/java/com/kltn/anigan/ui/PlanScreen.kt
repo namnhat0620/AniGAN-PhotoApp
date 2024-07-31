@@ -72,7 +72,7 @@ fun PlanScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        getAllPlan(context) {
+        getAllPlan(context, viewModel) {
             listPlanIds = it
         }
     }
@@ -288,11 +288,14 @@ private fun Page2(
     }
 }
 
-private fun getAllPlan(context: Context, onResponse: (IntArray) -> Unit) {
+private fun getAllPlan(context: Context, viewModel: DocsViewModel, onResponse: (IntArray) -> Unit) {
     val listPlanIds: IntArray = intArrayOf()
 
     try {
-        GetPlanApi().getAllPlan().enqueue(object :
+        GetPlanApi().getAllPlan(
+            if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
+            else ""
+        ).enqueue(object :
             Callback<LoadPlanResponse> {
             override fun onResponse(
                 call: Call<LoadPlanResponse>,

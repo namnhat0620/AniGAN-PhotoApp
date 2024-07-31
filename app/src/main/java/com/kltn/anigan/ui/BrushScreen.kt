@@ -166,6 +166,10 @@ private fun Footer(
         Slider(value = viewModel.opacity.floatValue, valueRange = 0f..100f, onValueChange = {
             viewModel.opacity.floatValue = it
         })
+        Text(text = "Rotate", color = Color.White)
+        Slider(value = viewModel.angle.floatValue, valueRange = 0f..360f, onValueChange = {
+            viewModel.angle.floatValue = it
+        })
         ListColor {
             viewModel.color.value = it
         }

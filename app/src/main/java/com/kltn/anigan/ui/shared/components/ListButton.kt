@@ -65,7 +65,7 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel, isLoading
             horizontalArrangement = Arrangement.SpaceAround
         ) {
             FuncButton2(
-                R.drawable.baseline_auto_awesome_24, "AI Tools", isLoading
+                R.drawable.baseline_auto_awesome_24, "Face2\nAnime", isLoading
             ) {
                 navController.navigate(Routes.AI_TOOLS.route)
             }

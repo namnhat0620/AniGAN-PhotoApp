@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.enums.EditType
+import com.kltn.anigan.utils.BitmapUtils
 import com.kltn.anigan.utils.BitmapUtils.Companion.cropWidthHeight
 import com.kltn.anigan.utils.BitmapUtils.Companion.dpFromPx
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromDrawable
@@ -243,7 +244,7 @@ class MyCanvasView(
             val alpha = viewModel.opacity.floatValue / 100
             // Draw the image on the canvas with the calculated position and size
             drawImage(
-                image = scaledHairBitmap.asImageBitmap(),
+                image = BitmapUtils.rotateBitmap(scaledHairBitmap, viewModel.angle.floatValue).asImageBitmap(),
                 topLeft = Offset(x, y),
                 alpha = alpha
             )
