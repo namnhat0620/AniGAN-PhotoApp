@@ -262,7 +262,8 @@ private fun transformImage(
                                 viewModel.bitmap =
                                     getBitmapFromUrl(
                                         context = context,
-                                        urlString = viewModel.resultUrl.value
+                                        urlString = viewModel.resultUrl.value,
+                                        accessToken = viewModel.accessToken.value
                                     )
                                 viewModel.url.value = viewModel.resultUrl.value
 

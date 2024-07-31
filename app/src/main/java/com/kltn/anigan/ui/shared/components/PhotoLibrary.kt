@@ -1,6 +1,7 @@
 package com.kltn.anigan.ui.shared.components
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -13,25 +14,35 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
+import com.bumptech.glide.Glide
 import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
 import com.bumptech.glide.integration.compose.GlideImage
 import com.bumptech.glide.integration.compose.placeholder
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
 import com.kltn.anigan.R
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.ImageClassFromInternet
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.utils.BitmapUtils
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+
 
 @OptIn(ExperimentalGlideComposeApi::class)
 @Composable
@@ -51,8 +62,17 @@ internal fun PhotoLibrary(
     ) {
         items(itemList, key = { it.image_id }) { item ->
             if (item.url.isNotEmpty()) {
+                var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+
+                LaunchedEffect(item.url) {
+                    // Launch a coroutine in the composition scope
+                    bitmap = withContext(Dispatchers.IO) {
+                        getBitmapFromUrl(item.url, context, viewModel.accessToken.value) // Call suspending function
+                    }
+                }
+
                 GlideImage(
-                    model = item.url,
+                    model = bitmap,
                     failure = placeholder(R.drawable.default_image),
                     contentDescription = null,
                     modifier = Modifier
@@ -99,9 +119,10 @@ private fun fetchBitmapAndNavigate(
 ) {
     viewModel.viewModelScope.launch(Dispatchers.IO) {
         try {
-            val bitmap = BitmapUtils.getBitmapFromUrl(
+            val bitmap = getBitmapFromUrl(
                 context = context,
-                urlString = url
+                urlString = url,
+                accessToken = viewModel.accessToken.value
             )
             withContext(Dispatchers.Main) {
                 viewModel.bitmap = bitmap

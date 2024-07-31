@@ -13,6 +13,8 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
@@ -32,15 +34,20 @@ class BitmapUtils {
             }
         }
 
-        suspend fun getBitmapFromUrl(urlString: String, context: Context): Bitmap? {
+        suspend fun getBitmapFromUrl(urlString: String, context: Context, accessToken: String): Bitmap? {
             if (urlString.isEmpty()) return null
             return withContext(Dispatchers.IO) {
                 try {
-//                    val requestOptions = RequestOptions()
-//                        .override(500, 500) // Set your desired width and height
+                    val glideUrl = GlideUrl(
+                        urlString,
+                        LazyHeaders.Builder()
+                            .addHeader("Authorization", "Bearer $accessToken")
+                            .build()
+                    )
+
                     Glide.with(context)
                         .asBitmap()
-                        .load(urlString)
+                        .load(glideUrl)
 //                        .apply(requestOptions)
                         .submit()
                         .get()

@@ -69,30 +69,27 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
         coroutineScope {
             launch {
                 DataStoreManager.getRefreshToken(context).collect {
-                    it?.let {
-                        if (it.isNotEmpty()) {
-                            refreshToken(it, context, viewModel)
-                        } else {
-                            loginAsTechnicalUser(context, viewModel)
-                        }
+                    if (true == it?.isNotEmpty()) {
+                        refreshToken(it, context, viewModel)
+                    } else {
+                        loginAsTechnicalUser(context, viewModel)
                     }
                 }
             }
         }
     }
 
-//    LaunchedEffect(Unit) {
-//        coroutineScope {
-//
-//            launch {
-//                viewModel.loadMoreUserImages(viewModel)
-//            }
-//
-//            launch {
-//                viewModel.loadMoreAniganImages(viewModel)
-//            }
-//        }
-//    }
+    LaunchedEffect(Unit) {
+        coroutineScope {
+            launch {
+                viewModel.loadMoreUserImages(viewModel)
+            }
+
+            launch {
+                viewModel.loadMoreAniganImages(viewModel)
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -116,12 +113,12 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
 
             Title(text1 = "Edit Your Photos", text2 = "")
             PhotoLibrary(viewModel.userImages, viewModel, navController) {
-//                viewModel.loadMoreUserImages(viewModel)
+                viewModel.loadMoreUserImages(viewModel)
             }
 
             Title(text1 = "History", text2 = "")
             PhotoLibrary(viewModel.aniganImages, viewModel, navController) {
-//                viewModel.loadMoreAniganImages(viewModel)
+                viewModel.loadMoreAniganImages(viewModel)
             }
         }
     }

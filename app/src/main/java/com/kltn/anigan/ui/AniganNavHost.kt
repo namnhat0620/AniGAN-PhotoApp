@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.kltn.anigan.domain.BillingViewModel
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.routes.Routes
 
@@ -14,7 +15,8 @@ fun AniganNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.MAIN_SCREEN.route,
-    viewModel: DocsViewModel
+    viewModel: DocsViewModel,
+    billingViewModel: BillingViewModel
 ) {
 
     NavHost(
@@ -75,7 +77,7 @@ fun AniganNavHost(
         composable(
             Routes.PLAN.route
         ) {
-            PlanScreen(navController, viewModel)
+            PlanScreen(navController, viewModel, billingViewModel)
         }
     }
 }
