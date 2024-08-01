@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoginApi
 import com.kltn.anigan.api.RefreshTokenApi
@@ -65,6 +66,7 @@ import retrofit2.Response
 @Composable
 fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
 
     LaunchedEffect(Unit) {
         coroutineScope {
@@ -80,14 +82,14 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(navBackStackEntry.value?.destination?.route == Routes.MAIN_SCREEN.route, viewModel.refreshToken) {
         coroutineScope {
             launch {
-                viewModel.loadMoreUserImages(HardwareUtils.getMobileId(context), viewModel)
+                viewModel.initUserImages(HardwareUtils.getMobileId(context), viewModel)
             }
 
             launch {
-                viewModel.loadMoreAniganImages(HardwareUtils.getMobileId(context), viewModel)
+                viewModel.initAniganImages(HardwareUtils.getMobileId(context), viewModel)
             }
         }
     }
@@ -272,7 +274,7 @@ private fun refreshToken(token: String, context: Context, viewModel: DocsViewMod
                     GlobalScope.launch {
                         DataStoreManager.getUsername(context).collect { username ->
                             username?.let {
-                                viewModel.changeTempUsername(username)
+                                viewModel.userName.value = username
                             }
                         }
 

@@ -116,7 +116,7 @@ private fun TabBar(
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState()
-    val pages = listOf("Pro+", "Pro")
+    val pages = listOf("Pro", "Pro+")
 
     val indicator = @Composable { tabPositions: List<TabPosition> ->
         CustomIndicator(tabPositions, pagerState)
@@ -335,7 +335,6 @@ private fun getAllPlan(context: Context, viewModel: DocsViewModel, onResponse: (
 
 }
 
-@OptIn(DelicateCoroutinesApi::class)
 private fun registerPlan(context: Context, viewModel: DocsViewModel, billingViewModel: BillingViewModel, planId: Int) {
     billingViewModel.billingClient!!.startConnection(object :BillingClientStateListener{
         override fun onBillingServiceDisconnected() {
@@ -343,6 +342,7 @@ private fun registerPlan(context: Context, viewModel: DocsViewModel, billingView
         }
 
         override fun onBillingSetupFinished(p0: BillingResult) {
+            viewModel.planIdToRegister.value = planId
             val productList = listOf(QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(if(planId == 3) "13" else "14")
                 .setProductType(BillingClient.ProductType.SUBS)

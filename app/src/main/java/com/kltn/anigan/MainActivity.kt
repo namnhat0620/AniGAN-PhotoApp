@@ -1,6 +1,7 @@
 package com.kltn.anigan
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -26,13 +27,26 @@ import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
+import com.kltn.anigan.api.RegisterPlanApi
 import com.kltn.anigan.domain.BillingViewModel
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.enums.BillingSecurity
+import com.kltn.anigan.domain.request.RegisterPlanBody
+import com.kltn.anigan.domain.response.RegisterPlanResponse
 import com.kltn.anigan.ui.AniganNavHost
 import com.kltn.anigan.ui.theme.AniGANTheme
 import okio.IOException
 import java.util.concurrent.Executors
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import com.kltn.anigan.utils.DataStoreManager
+import android.util.Log
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.DelicateCoroutinesApi
 
 class MainActivity : ComponentActivity() {
     private val cameraPermissionRequestCode = 100
@@ -51,6 +65,8 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val viewModel = remember { DocsViewModel() }
+                    val context = LocalContext.current
+                    billingViewModel.viewModel.value = viewModel
                     billingViewModel.billingClient = BillingClient.newBuilder(this)
                         .setListener(purchasesUpdatedListener)
                         .enablePendingPurchases()
@@ -105,7 +121,7 @@ class MainActivity : ComponentActivity() {
             .build()
         val listener = ConsumeResponseListener {billingResult, s ->
             if(billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-
+                registerPlan(billingViewModel)
             }
         }
         billingViewModel.billingClient!!.consumeAsync(consumeParams, listener)
@@ -151,4 +167,27 @@ class MainActivity : ComponentActivity() {
             false
         }
     }
+}
+
+@OptIn(DelicateCoroutinesApi::class)
+private fun registerPlan(billingViewModel: BillingViewModel) {
+    val viewModel = billingViewModel.viewModel.value
+    RegisterPlanApi().registerPlan(
+        "Bearer ${viewModel?.accessToken?.value}",
+        RegisterPlanBody(viewModel?.planIdToRegister?.value ?: 0)
+    ).enqueue(object :
+        Callback<RegisterPlanResponse> {
+        override fun onResponse(
+            call: Call<RegisterPlanResponse>,
+            response: Response<RegisterPlanResponse>
+        ) {
+            response.body()?.let {
+                viewModel?.numberOfGeneration?.intValue = it.data.number_of_generation
+            }
+        }
+
+        override fun onFailure(call: Call<RegisterPlanResponse>, t: Throwable) {
+            Log.i("Logout failed", "onFailure: ${t.message}")
+        }
+    })
 }

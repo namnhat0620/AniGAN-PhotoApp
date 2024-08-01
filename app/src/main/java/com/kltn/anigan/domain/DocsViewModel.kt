@@ -51,6 +51,7 @@ class DocsViewModel(
     private val validatePassword: ValidatePassword = ValidatePassword(),
     private val validateConfirmPassword: ValidateConfirmPassword = ValidateConfirmPassword()
 ) : ViewModel() {
+    val planIdToRegister = mutableStateOf(0)
     // authorization
     val accessToken = mutableStateOf("")
     val refreshToken = mutableStateOf("")
@@ -221,9 +222,23 @@ class DocsViewModel(
         }
     }
 
-    fun loadMoreUserImages(deviceId: String, viewModel: DocsViewModel) {
+    fun initUserImages(deviceId: String, viewModel: DocsViewModel) {
         viewModelScope.launch {
             if (!isLoadingUserImages.value) {
+                isLoadingUserImages.value = true
+                getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.USER_IMAGE.type, page = 1) {
+                    userImages.clear()
+                    userImages.addAll(it)
+                }
+                userImagesPage.intValue = 2
+                isLoadingUserImages.value = false
+            }
+        }
+    }
+
+    fun loadMoreUserImages(deviceId: String, viewModel: DocsViewModel) {
+        viewModelScope.launch {
+            if (!isLoadingUserImages.value &&  userImagesPage.intValue > 1) {
                 isLoadingUserImages.value = true
                 getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.USER_IMAGE.type, page = userImagesPage.intValue) {
                     userImages.addAll(it)
@@ -234,9 +249,23 @@ class DocsViewModel(
         }
     }
 
-    fun loadMoreAniganImages(deviceId: String, viewModel: DocsViewModel) {
+    fun initAniganImages(deviceId: String, viewModel: DocsViewModel) {
         viewModelScope.launch {
             if (!isLoadingAniganImages.value) {
+                isLoadingAniganImages.value = true
+                getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.ANIGAN_IMAGE.type, page = 1) {
+                    aniganImages.clear()
+                    aniganImages.addAll(it)
+                }
+                aniganImagesPage.intValue = 2
+                isLoadingAniganImages.value = false
+            }
+        }
+    }
+
+    fun loadMoreAniganImages(deviceId: String, viewModel: DocsViewModel) {
+        viewModelScope.launch {
+            if (!isLoadingAniganImages.value && aniganImagesPage.intValue > 1) {
                 isLoadingAniganImages.value = true
                 getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.ANIGAN_IMAGE.type, page = aniganImagesPage.intValue) {
                     aniganImages.addAll(it)
@@ -244,17 +273,6 @@ class DocsViewModel(
                 aniganImagesPage.intValue += 1
                 isLoadingAniganImages.value = false
             }
-        }
-    }
-
-    fun clearAllImages() {
-        if(aniganImages.size > 0) {
-            aniganImages.clear()
-            aniganImagesPage.intValue = 0
-        }
-        if(userImages.size > 0) {
-            userImages.clear()
-            userImagesPage.intValue = 0
         }
     }
 }
@@ -269,6 +287,7 @@ private fun getImage(
     LoadImageApi().getRefImage(
         if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
         else "",
+//        "Bearer eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJ1cDJYS2ZZNlVjZUFuMnZtSktvRjV6UzBqakhnVlBNcHhYQm43bE41SEhRIn0.eyJleHAiOjE3MjI1MDkzNTMsImlhdCI6MTcyMjUwOTA1MywianRpIjoiMjQ4ODc0MzAtMmE2NC00ZWFlLTg2ZGYtNmQxMmNlZjhkOGFkIiwiaXNzIjoiaHR0cHM6Ly9rZXljbG9hay1kb2NrZXItcHJvZHVjdGlvbi02NDdkLnVwLnJhaWx3YXkuYXBwL3JlYWxtcy9hbmlnYW4iLCJhdWQiOiJhY2NvdW50Iiwic3ViIjoiMmY1NGI2YTMtZDMyYi00YzQxLWI3N2ItNTQ4NDgyYmQ4OGE3IiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYW5pZ2FuLWJlIiwic2Vzc2lvbl9zdGF0ZSI6IjUxMzQ4NTIxLWU3ODUtNDljYy05ODQ5LTkyNzcwZWU1NjU1ZiIsImFjciI6IjEiLCJhbGxvd2VkLW9yaWdpbnMiOlsiaHR0cHM6Ly93d3cua2V5Y2xvYWsub3JnIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJkZWZhdWx0LXJvbGVzLWFuaWdhbiIsIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImVtYWlsIHByb2ZpbGUiLCJzaWQiOiI1MTM0ODUyMS1lNzg1LTQ5Y2MtOTg0OS05Mjc3MGVlNTY1NWYiLCJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsIm5hbWUiOiJuYW0wMiBuYW0iLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJuYW0wMiIsImdpdmVuX25hbWUiOiJuYW0wMiIsImZhbWlseV9uYW1lIjoibmFtIiwiZW1haWwiOiJuYW0wMkBnbWFpbC5jb20ifQ.ApE4l9d7FhzvLZgHSUOfCxXOsG_Py7SA8PLm4bNiQC-UTYnKDISUdvlabGivLAT6VMmM-cvdvSXv_txtcYvxYZxEHLkHrmC4F4TypmxhshKhuvtMS9290gEIMHptg9qUrJdlnxh0YPzUd9p5FZRLOHOzAs0KPcwPJa4GJp6DIr4IcNkW3yBLXFLDDfNXdeVFRAiMtG5zS8T1jKR_EaA7QFVUUlVCylnSIvl4IDIIPaZyy_HoJg7L3TB9WFw06LGpjWHtvkwYoIqD3DVEDGk34WEmubVALPG0-_B0gOwwngD4V9eoVf_w6uWM0T80WvsaQkKQeFyC_b83Xz6ct1gUTQ",
         deviceId, type, page).enqueue(object :
         Callback<LoadImageResponse> {
         override fun onResponse(

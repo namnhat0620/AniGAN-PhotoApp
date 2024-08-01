@@ -16,11 +16,7 @@ fun EditFooter(
     viewModel: DocsViewModel,
     isLoading: Boolean
 ) {
-    Row(
-        Modifier
-            .fillMaxSize(),
-        verticalAlignment = Alignment.Bottom
-    ) {
+    Row {
         ListButton(navController = navController, viewModel, isLoading)
     }
 

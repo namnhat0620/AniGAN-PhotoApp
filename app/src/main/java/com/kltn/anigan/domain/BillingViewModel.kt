@@ -16,4 +16,5 @@ class BillingViewModel(
 
     var isSuccess = false
     var productList =  mutableStateListOf<Product>()
+    var viewModel = mutableStateOf<DocsViewModel?>(null)
 }

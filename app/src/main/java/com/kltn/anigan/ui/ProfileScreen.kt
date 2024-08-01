@@ -135,7 +135,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
                 contentDescription = ""
             )
             Column {
-                Text(text = viewModel.tempUsername, color = Color.White, fontSize = 20.sp)
+                Text(text = viewModel.userName.value, color = Color.White, fontSize = 20.sp)
                 Text(
                     text = viewModel.expiration.value,
                     color = Color.Yellow,
@@ -151,7 +151,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
             },
             modifier = Modifier.padding(0.dp)
         ) {
-            if (viewModel.tempUsername.isNotEmpty()) {
+            if (viewModel.userName.value.isNotEmpty()) {
                 Image(
                     painter = painterResource(id = R.drawable.baseline_energy_savings_leaf_24),
                     contentDescription = ""
@@ -266,6 +266,7 @@ private fun logout(context: Context, viewModel: DocsViewModel, navController: Na
             response: Response<Void>
         ) {
             viewModel.resetAll(context, viewModel)
+            viewModel.userName.value = ""
             navController.navigate(Routes.MAIN_SCREEN.route)
         }
 

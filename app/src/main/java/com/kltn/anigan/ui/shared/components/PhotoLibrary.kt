@@ -54,13 +54,19 @@ internal fun PhotoLibrary(
 ) {
     val context = LocalContext.current
     val listState = rememberLazyListState()
+    var currentItemList by remember { mutableStateOf(itemList) }
+
+    LaunchedEffect(itemList) {
+        currentItemList = itemList
+        listState.scrollToItem(0)
+    }
 
     LazyRow(
         state = listState,
         modifier = Modifier
             .padding(vertical = 15.dp)
     ) {
-        items(itemList, key = { it.image_id }) { item ->
+        items(currentItemList, key = { it.image_id }) { item ->
             if (item.url.isNotEmpty()) {
                 var bitmap by remember { mutableStateOf<Bitmap?>(null) }
                 var isLoading by remember { mutableStateOf(true) }
