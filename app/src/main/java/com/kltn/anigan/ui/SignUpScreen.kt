@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,12 +37,14 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.kltn.anigan.R
 import com.kltn.anigan.api.SignUpApi
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.domain.request.SignUpRequestBody
 import com.kltn.anigan.routes.Routes
 import com.kltn.anigan.ui.shared.components.ConditionRow
+import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -51,9 +54,10 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
     var passwordVisibility by remember { mutableStateOf(false) }
     var confirmPasswordVisibility by remember { mutableStateOf(false) }
+    val navBackStackEntry = navController.currentBackStackEntryAsState()
 
     //Validate
-    val username = viewModel.username
+    val username = viewModel.tempUsername
     val usernameError by viewModel.usernameError.collectAsStateWithLifecycle()
 
     val email = viewModel.email
@@ -78,6 +82,10 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
                 confirmPasswordError.successful &&
                 firstNameError.successful &&
                 lastNameError.successful
+
+    LaunchedEffect(navBackStackEntry.value?.destination?.route) {
+        viewModel.resetAll(context, viewModel)
+    }
 
 //                username.isNotBlank() &&
 //                password.isNotBlank() &&
@@ -109,7 +117,7 @@ fun SignUpScreen(navController: NavController, viewModel: DocsViewModel) {
 
         OutlinedTextField(
             value = username,
-            onValueChange = viewModel::changeUsername,
+            onValueChange = viewModel::changeTempUsername,
             isError = username.isNotEmpty() && !usernameError.successful,
             label = {
                 Text(text = "Username")
@@ -261,7 +269,7 @@ private fun signUp(
 ) {
     SignUpApi().signup(
         SignUpRequestBody(
-            username = viewModel.username,
+            username = viewModel.tempUsername,
             password = viewModel.password,
             email = viewModel.email,
             firstName = viewModel.firstName,
@@ -278,7 +286,18 @@ private fun signUp(
                 viewModel.resetAll(context, viewModel)
                 navController.navigate(Routes.LOGIN.route)
             } else {
-                Toast.makeText(context, response.message(), Toast.LENGTH_SHORT).show()
+                // Handle error response
+                val errorMessage = try {
+                    response.errorBody()?.string() ?: "Unknown error"
+                } catch (e: Exception) {
+                    "Error parsing error message"
+                }
+
+                // Parse error message from JSON if needed
+                val jsonObj = JSONObject(errorMessage)
+                val message = jsonObj.optString("message", "Unknown error")
+
+                Toast.makeText(context, "Error: $message", Toast.LENGTH_LONG).show()
             }
         }
 

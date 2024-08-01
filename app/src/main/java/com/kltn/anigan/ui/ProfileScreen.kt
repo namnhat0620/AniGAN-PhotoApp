@@ -39,11 +39,7 @@ import com.kltn.anigan.R
 import com.kltn.anigan.api.LogoutApi
 import com.kltn.anigan.domain.DocsViewModel
 import com.kltn.anigan.routes.Routes
-import com.kltn.anigan.utils.DataStoreManager
 import com.kltn.anigan.utils.PlanUtils
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -139,7 +135,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
                 contentDescription = ""
             )
             Column {
-                Text(text = viewModel.username, color = Color.White, fontSize = 20.sp)
+                Text(text = viewModel.tempUsername, color = Color.White, fontSize = 20.sp)
                 Text(
                     text = viewModel.expiration.value,
                     color = Color.Yellow,
@@ -155,7 +151,7 @@ private fun UserInfo(navController: NavController?, viewModel: DocsViewModel) {
             },
             modifier = Modifier.padding(0.dp)
         ) {
-            if (viewModel.username.isNotEmpty()) {
+            if (viewModel.tempUsername.isNotEmpty()) {
                 Image(
                     painter = painterResource(id = R.drawable.baseline_energy_savings_leaf_24),
                     contentDescription = ""

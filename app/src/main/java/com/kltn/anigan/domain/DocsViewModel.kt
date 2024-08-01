@@ -32,7 +32,6 @@ import com.kltn.anigan.domain.validators.password.ValidatePassword
 import com.kltn.anigan.domain.validators.username.UsernameValidationState
 import com.kltn.anigan.domain.validators.username.ValidateUsername
 import com.kltn.anigan.utils.DataStoreManager
-import com.kltn.anigan.utils.HardwareUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -58,12 +57,13 @@ class DocsViewModel(
     var hasPlan = mutableStateOf(false)
     var expiration = mutableStateOf("")
     var numberOfGeneration = mutableIntStateOf(0)
+    val userName = mutableStateOf("")
 
     // Validators username
-    var username by mutableStateOf("")
+    var tempUsername by mutableStateOf("")
         private set
 
-    val usernameError = snapshotFlow { username }
+    val usernameError = snapshotFlow { tempUsername }
         .mapLatest { validateUsername.execute(it) }
         .stateIn(
             scope = viewModelScope,
@@ -71,8 +71,8 @@ class DocsViewModel(
             initialValue = UsernameValidationState()
         )
 
-    fun changeUsername(value: String) {
-        username = value
+    fun changeTempUsername(value: String) {
+        tempUsername = value
     }
 
     // Validators password
@@ -205,9 +205,11 @@ class DocsViewModel(
     @OptIn(DelicateCoroutinesApi::class)
     fun resetAll(context: Context, viewModel: DocsViewModel) {
         viewModel.accessToken.value = ""
-        viewModel.changeUsername("")
+        viewModel.changeTempUsername("")
         viewModel.changeFirstName("")
         viewModel.changeLastName("")
+        viewModel.changePassword("")
+        viewModel.changeConfirmPassword("")
         viewModel.hasPlan.value = false
         viewModel.numberOfGeneration.intValue = 0
         viewModel.expiration.value = ""
@@ -242,6 +244,17 @@ class DocsViewModel(
                 aniganImagesPage.intValue += 1
                 isLoadingAniganImages.value = false
             }
+        }
+    }
+
+    fun clearAllImages() {
+        if(aniganImages.size > 0) {
+            aniganImages.clear()
+            aniganImagesPage.intValue = 0
+        }
+        if(userImages.size > 0) {
+            userImages.clear()
+            userImagesPage.intValue = 0
         }
     }
 }

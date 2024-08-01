@@ -276,6 +276,7 @@ private fun transformImage(
                                 }
                             }
                         }
+                        viewModel.loadMoreAniganImages(HardwareUtils.getMobileId(context), viewModel)
                         onLoadingChange(false)
                     }
                 } else {

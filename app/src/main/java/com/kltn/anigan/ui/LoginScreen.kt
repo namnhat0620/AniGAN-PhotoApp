@@ -59,10 +59,11 @@ fun LoginScreen(navController: NavController, viewModel: DocsViewModel) {
     val password = viewModel.password
     var passwordVisibility by remember { mutableStateOf(false) }
     val passwordError by viewModel.passwordError.collectAsStateWithLifecycle()
-    val username = viewModel.username
+    val username = viewModel.tempUsername
     val usernameError by viewModel.usernameError.collectAsStateWithLifecycle()
 
     val isEnabledLogin = usernameError.successful && passwordError.successful
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -87,7 +88,7 @@ fun LoginScreen(navController: NavController, viewModel: DocsViewModel) {
 
         OutlinedTextField(
             value = username,
-            onValueChange = viewModel::changeUsername,
+            onValueChange = viewModel::changeTempUsername,
             isError = username.isNotEmpty() && !usernameError.successful,
             label = {
                 Text(text = "Username")
@@ -165,7 +166,7 @@ fun login(
     navController: NavController
 ) {
     LoginApi().login(
-        LoginRequestBody(username = viewModel.username, password = password)
+        LoginRequestBody(username = viewModel.tempUsername, password = password)
     ).enqueue(object : Callback<LoginResponse> {
         override fun onResponse(
             call: Call<LoginResponse>,
@@ -178,8 +179,9 @@ fun login(
                     viewModel.refreshToken.value = it.refresh_token
                     viewModel.aniganImages.clear()
                     viewModel.userImages.clear()
+                    viewModel.userName.value = viewModel.tempUsername
                     GlobalScope.launch {
-                        DataStoreManager.saveUsername(context, viewModel.username)
+                        DataStoreManager.saveUsername(context, viewModel.tempUsername)
                         DataStoreManager.saveRefreshToken(context, it.refresh_token)
                     }
                     navController.navigate(Routes.MAIN_SCREEN.route)

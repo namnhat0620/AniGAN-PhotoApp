@@ -95,14 +95,12 @@ import java.util.Date
 import java.util.Locale
 import java.util.Objects
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
     val url = viewModel.url.value
     val bitmap = viewModel.bitmap
     var isLoading by remember { mutableStateOf(false) }
-    var resolutionOptionExpanded by remember { mutableStateOf(false) }
 //    val scrollState = rememberScrollState()
 
     LaunchedEffect(bitmap, url) {
@@ -200,7 +198,7 @@ private fun InsertImage(
             .fillMaxWidth()
             .background(color = colorResource(id = R.color.background_gray))
             .defaultMinSize(minHeight = 250.dp)
-            .fillMaxHeight(0.6f)
+            .fillMaxHeight(0.4f)
             .clickable {
                 val permissionCheckResult =
                     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
@@ -442,7 +440,7 @@ private fun generateImageFromBitmap(
                     viewModel.url.value = it.url
                 }
                 onLoadingChange(false)
-
+                viewModel.loadMoreUserImages(HardwareUtils.getMobileId(context), viewModel)
             } else {
                 // Handle error response
                 val errorMessage = try {

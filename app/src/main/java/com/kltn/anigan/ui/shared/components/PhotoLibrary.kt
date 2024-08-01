@@ -63,25 +63,29 @@ internal fun PhotoLibrary(
         items(itemList, key = { it.image_id }) { item ->
             if (item.url.isNotEmpty()) {
                 var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+                var isLoading by remember { mutableStateOf(true) }
 
                 LaunchedEffect(item.url) {
                     // Launch a coroutine in the composition scope
                     bitmap = withContext(Dispatchers.IO) {
                         getBitmapFromUrl(item.url, context, viewModel.accessToken.value) // Call suspending function
                     }
+                    isLoading = false
                 }
 
-                GlideImage(
-                    model = bitmap,
-                    failure = placeholder(R.drawable.default_image),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .padding(end = 12.dp)
-                        .size(100.dp)
-                        .clickable {
-                            fetchBitmapAndNavigate(item.url, context, viewModel, navController)
-                        }
-                )
+                if (!isLoading) {
+                    GlideImage(
+                        model = bitmap,
+                        failure = placeholder(R.drawable.default_image),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(100.dp)
+                            .clickable {
+                                fetchBitmapAndNavigate(item.url, context, viewModel, navController)
+                            }
+                    )
+                }
             } else {
                 Box(modifier = Modifier.size(100.dp)) {
                     CircularProgressIndicator()

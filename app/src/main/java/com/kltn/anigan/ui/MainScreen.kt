@@ -67,8 +67,6 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        viewModel.userImages.clear()
-        viewModel.aniganImages.clear()
         coroutineScope {
             launch {
                 DataStoreManager.getRefreshToken(context).collect {
@@ -144,20 +142,20 @@ private fun Header(navController: NavController?, viewModel: DocsViewModel) {
         //Icon notification
         OutlinedButton(
             onClick = {
-                if (viewModel.username.isEmpty()) {
+                if (viewModel.userName.value.isEmpty()) {
                     navController?.navigate(Routes.LOGIN.route)
                 } else {
                     navController?.navigate(Routes.PROFILE.route)
                 }
             }
         ) {
-            if (viewModel.username.isNotEmpty()) {
+            if (viewModel.userName.value.isNotEmpty()) {
                 Image(
                     painter = painterResource(id = R.drawable.round_account_circle_24),
                     contentDescription = ""
                 )
                 Spacer(Modifier.width(1.dp))
-                Text(text = viewModel.username, color = Color.White)
+                Text(text = viewModel.userName.value, color = Color.White)
             } else {
                 Text(text = "Login", color = Color.White)
             }
@@ -274,7 +272,7 @@ private fun refreshToken(token: String, context: Context, viewModel: DocsViewMod
                     GlobalScope.launch {
                         DataStoreManager.getUsername(context).collect { username ->
                             username?.let {
-                                viewModel.changeUsername(username)
+                                viewModel.changeTempUsername(username)
                             }
                         }
 
@@ -317,7 +315,6 @@ private fun loginAsTechnicalUser(
         ) {
             if (response.isSuccessful) {
                 response.body()?.let {
-                    Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
                     viewModel.accessToken.value = it.access_token
                     viewModel.refreshToken.value = it.refresh_token
                     GlobalScope.launch {

@@ -64,6 +64,7 @@ fun EditScreen(
             .background(colorResource(id = R.color.black))
             .fillMaxWidth()
             .padding(horizontal = 12.dp),
+        verticalArrangement = Arrangement.SpaceBetween,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         //Header

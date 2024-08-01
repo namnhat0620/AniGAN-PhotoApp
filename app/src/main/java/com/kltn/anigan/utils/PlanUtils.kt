@@ -41,7 +41,6 @@ class PlanUtils {
                                     it.data.remain_generation.toString()
                                 )
                             }
-                            Toast.makeText(context, "Successfully", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
