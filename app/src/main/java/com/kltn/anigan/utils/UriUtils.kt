@@ -10,6 +10,7 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.activity.result.ActivityResultLauncher
 import androidx.core.content.FileProvider
+import com.kltn.anigan.domain.DocsViewModel
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
@@ -86,7 +87,7 @@ class UriUtils {
             return name
         }
 
-        fun saveImageFromUrl(context: Context, imageUrl: String): Uri {
+        fun saveImageFromUrl(context: Context, viewModel: DocsViewModel, imageUrl: String): Uri {
             val url = URL(imageUrl)
 
             // Create a directory for saving the image
@@ -103,7 +104,9 @@ class UriUtils {
 
             val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
             connection.doInput = true
+            connection.setRequestProperty("Authorization", "Bearer ${viewModel.accessToken.value}")
             connection.connect()
+
             val input = connection.inputStream
 
             val fileOutputStream = FileOutputStream(savePath)

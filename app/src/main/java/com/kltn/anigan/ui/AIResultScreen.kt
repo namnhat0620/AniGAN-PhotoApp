@@ -139,7 +139,7 @@ fun AIResultScreen(
                             .clickable(
                                 enabled = !isLoading
                             ) {
-                                onShareButtonClick(context, shareImageLauncher, focusURL)
+                                onShareButtonClick(context, viewModel, shareImageLauncher, focusURL)
                             }
                             .alpha(if (isLoading) 0.4f else 1f)
                     )
@@ -315,13 +315,14 @@ private fun transformImage(
 @OptIn(DelicateCoroutinesApi::class)
 private fun onShareButtonClick(
     context: Context,
+    viewModel: DocsViewModel,
     shareImageLauncher: ActivityResultLauncher<Intent>,
     imageUrl: String
 ) {
     GlobalScope.launch(Dispatchers.IO) {
         try {
             // Download the image and save it to a file
-            val imagePath = saveImageFromUrl(context, imageUrl)
+            val imagePath = saveImageFromUrl(context, viewModel, imageUrl)
 
             // Share the image
             shareImage(shareImageLauncher, imagePath)
