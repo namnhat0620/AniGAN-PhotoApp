@@ -75,7 +75,7 @@ fun ListButton(navController: NavController, viewModel: DocsViewModel, isLoading
                 cropActivity(context, viewModel, cropLauncher)
             }
             FuncButton2(
-                R.drawable.baseline_brush_24, "Brush", isLoading
+                R.drawable.Hair, "Hair", isLoading
             ) {
                 navController.navigate(Routes.HAIR_SCREEN.route)
             }
