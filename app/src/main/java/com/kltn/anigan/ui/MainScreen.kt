@@ -230,7 +230,7 @@ private fun ListButton(navController: NavController? = null, viewModel: DocsView
             onClick = {
                 navController?.navigate(Routes.AI_TOOLS.route)
             })
-        FuncButton(R.drawable.baseline_brush_24, "Brush",
+        FuncButton(R.drawable.Hair, "Hair",
             onClick = {
                 route = Routes.HAIR_SCREEN
                 galleryLauncher.launch("image/*")
