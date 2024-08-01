@@ -52,6 +52,7 @@ import com.kltn.anigan.ui.shared.components.PhotoLibrary
 import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
 import com.kltn.anigan.utils.DataStoreManager
+import com.kltn.anigan.utils.HardwareUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.coroutineScope
@@ -66,6 +67,8 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
+        viewModel.userImages.clear()
+        viewModel.aniganImages.clear()
         coroutineScope {
             launch {
                 DataStoreManager.getRefreshToken(context).collect {
@@ -82,11 +85,11 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
     LaunchedEffect(Unit) {
         coroutineScope {
             launch {
-                viewModel.loadMoreUserImages(viewModel)
+                viewModel.loadMoreUserImages(HardwareUtils.getMobileId(context), viewModel)
             }
 
             launch {
-                viewModel.loadMoreAniganImages(viewModel)
+                viewModel.loadMoreAniganImages(HardwareUtils.getMobileId(context), viewModel)
             }
         }
     }
@@ -111,14 +114,18 @@ fun MainScreen(navController: NavController, viewModel: DocsViewModel) {
         ) {
             Banner()
 
-            Title(text1 = "Edit Your Photos", text2 = "")
-            PhotoLibrary(viewModel.userImages, viewModel, navController) {
-                viewModel.loadMoreUserImages(viewModel)
+            if(viewModel.userImages.size > 0) {
+                Title(text1 = "Edit Your Photos", text2 = "")
+                PhotoLibrary(viewModel.userImages, viewModel, navController) {
+                    viewModel.loadMoreUserImages(HardwareUtils.getMobileId(context), viewModel)
+                }
             }
 
-            Title(text1 = "History", text2 = "")
-            PhotoLibrary(viewModel.aniganImages, viewModel, navController) {
-                viewModel.loadMoreAniganImages(viewModel)
+            if(viewModel.aniganImages.size > 0) {
+                Title(text1 = "History", text2 = "")
+                PhotoLibrary(viewModel.aniganImages, viewModel, navController) {
+                    viewModel.loadMoreAniganImages(HardwareUtils.getMobileId(context), viewModel)
+                }
             }
         }
     }

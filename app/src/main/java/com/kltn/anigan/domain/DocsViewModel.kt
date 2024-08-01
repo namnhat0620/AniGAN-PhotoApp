@@ -19,6 +19,7 @@ import androidx.lifecycle.viewModelScope
 import com.kltn.anigan.R
 import com.kltn.anigan.api.LoadImageApi
 import com.kltn.anigan.domain.enums.ImageType
+import com.kltn.anigan.domain.enums.ResolutionOption
 import com.kltn.anigan.domain.response.LoadImageResponse
 import com.kltn.anigan.domain.validators.confirmPassword.ConfirmPasswordValidationState
 import com.kltn.anigan.domain.validators.confirmPassword.ValidateConfirmPassword
@@ -31,6 +32,7 @@ import com.kltn.anigan.domain.validators.password.ValidatePassword
 import com.kltn.anigan.domain.validators.username.UsernameValidationState
 import com.kltn.anigan.domain.validators.username.ValidateUsername
 import com.kltn.anigan.utils.DataStoreManager
+import com.kltn.anigan.utils.HardwareUtils
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -186,6 +188,7 @@ class DocsViewModel(
     var url = mutableStateOf("")
     var resultUrl = mutableStateOf("")
     var reference = mutableIntStateOf(0)
+    var resolutionOption = mutableStateOf(ResolutionOption._512x512.value)
 
     // For add hair
     var hairResourceId = mutableIntStateOf(R.drawable.male_3)
@@ -216,11 +219,11 @@ class DocsViewModel(
         }
     }
 
-    fun loadMoreUserImages(viewModel: DocsViewModel) {
+    fun loadMoreUserImages(deviceId: String, viewModel: DocsViewModel) {
         viewModelScope.launch {
             if (!isLoadingUserImages.value) {
                 isLoadingUserImages.value = true
-                getImage(viewModel = viewModel, type = ImageType.USER_IMAGE.type, page = userImagesPage.intValue) {
+                getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.USER_IMAGE.type, page = userImagesPage.intValue) {
                     userImages.addAll(it)
                 }
                 userImagesPage.intValue += 1
@@ -229,11 +232,11 @@ class DocsViewModel(
         }
     }
 
-    fun loadMoreAniganImages(viewModel: DocsViewModel) {
+    fun loadMoreAniganImages(deviceId: String, viewModel: DocsViewModel) {
         viewModelScope.launch {
             if (!isLoadingAniganImages.value) {
                 isLoadingAniganImages.value = true
-                getImage(viewModel = viewModel, type = ImageType.ANIGAN_IMAGE.type, page = aniganImagesPage.intValue) {
+                getImage(deviceId = deviceId, viewModel = viewModel, type = ImageType.ANIGAN_IMAGE.type, page = aniganImagesPage.intValue) {
                     aniganImages.addAll(it)
                 }
                 aniganImagesPage.intValue += 1
@@ -245,6 +248,7 @@ class DocsViewModel(
 
 private fun getImage(
     viewModel: DocsViewModel,
+    deviceId: String,
     type: Int,
     page: Int,
     onImageListLoaded: (List<ImageClassFromInternet>) -> Unit
@@ -252,7 +256,7 @@ private fun getImage(
     LoadImageApi().getRefImage(
         if (viewModel.accessToken.value != "") "Bearer ${viewModel.accessToken.value}"
         else "",
-        type, page).enqueue(object :
+        deviceId, type, page).enqueue(object :
         Callback<LoadImageResponse> {
         override fun onResponse(
             call: Call<LoadImageResponse>,

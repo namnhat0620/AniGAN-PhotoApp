@@ -176,6 +176,8 @@ fun login(
                     Toast.makeText(context, "Successfully!", Toast.LENGTH_SHORT).show()
                     viewModel.accessToken.value = it.access_token
                     viewModel.refreshToken.value = it.refresh_token
+                    viewModel.aniganImages.clear()
+                    viewModel.userImages.clear()
                     GlobalScope.launch {
                         DataStoreManager.saveUsername(context, viewModel.username)
                         DataStoreManager.saveRefreshToken(context, it.refresh_token)

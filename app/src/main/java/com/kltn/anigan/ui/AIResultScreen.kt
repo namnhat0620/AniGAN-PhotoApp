@@ -44,9 +44,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.rememberImagePainter
+import com.bumptech.glide.integration.compose.ExperimentalGlideComposeApi
+import com.bumptech.glide.integration.compose.GlideImage
 import com.kltn.anigan.R
 import com.kltn.anigan.api.TransformApi
 import com.kltn.anigan.domain.DocsViewModel
+import com.kltn.anigan.domain.enums.ResolutionOption
 import com.kltn.anigan.domain.request.TransformRequest
 import com.kltn.anigan.domain.response.TransformResponse
 import com.kltn.anigan.ui.shared.components.ListButton
@@ -68,7 +71,7 @@ import retrofit2.Response
 import java.io.IOException
 
 @SuppressLint("CoroutineCreationDuringComposition")
-@OptIn(DelicateCoroutinesApi::class)
+@OptIn(DelicateCoroutinesApi::class, ExperimentalGlideComposeApi::class)
 @Composable
 fun AIResultScreen(
     navController: NavController,
@@ -96,31 +99,23 @@ fun AIResultScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Header(navController = navController)
-
-        if (!isLoading) {
-            Image(
-                painter = rememberImagePainter(focusURL),
-                contentDescription = null,
-                contentScale = ContentScale.Inside,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.75f)
-            )
-        } else {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.75f),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                CircularProgressIndicator()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.75f),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (!isLoading) {
+                GlideImage(
+                    model = viewModel.bitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Inside
+                )
+            } else {
+                    CircularProgressIndicator()
             }
         }
-
-//        PhotoLibrary(itemList = resultList) {
-//            viewModel.resultUrl.value = it
-//        }
 
         Column(
             Modifier.fillMaxSize(),
@@ -245,7 +240,8 @@ private fun transformImage(
             TransformRequest(
                 sourceImg = sourceUrl,
                 referenceId = viewModel.reference.intValue,
-                mobileId = HardwareUtils.getMobileId(context)
+                mobileId = HardwareUtils.getMobileId(context),
+                resolutionOption = viewModel.resolutionOption.value
             )
         ).enqueue(object : Callback<TransformResponse> {
             override fun onResponse(

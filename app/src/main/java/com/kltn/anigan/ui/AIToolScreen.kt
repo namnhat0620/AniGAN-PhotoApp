@@ -4,8 +4,8 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.net.Uri
-import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,6 +13,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,12 +21,20 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,13 +44,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -51,13 +65,17 @@ import com.bumptech.glide.integration.compose.GlideImage
 import com.kltn.anigan.R
 import com.kltn.anigan.api.UploadApi
 import com.kltn.anigan.domain.DocsViewModel
+import com.kltn.anigan.domain.enums.ResolutionOption
 import com.kltn.anigan.domain.request.UploadRequestBody
 import com.kltn.anigan.domain.response.UploadUserImageResponse
 import com.kltn.anigan.ui.shared.components.GenerateSetting
+import com.kltn.anigan.ui.shared.components.ResolutionSetting
 import com.kltn.anigan.ui.shared.components.Title
 import com.kltn.anigan.utils.BitmapUtils.Companion.convertBitmap2ByteArray
 import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUri
+import com.kltn.anigan.utils.BitmapUtils.Companion.getBitmapFromUrl
 import com.kltn.anigan.utils.HardwareUtils
+import com.kltn.anigan.utils.PlanUtils
 import com.kltn.anigan.utils.UriUtils.Companion.encodeUri
 import com.kltn.anigan.utils.UriUtils.Companion.getFileName
 import com.kltn.anigan.utils.UriUtils.Companion.saveBitmapAndGetUri
@@ -77,19 +95,25 @@ import java.util.Date
 import java.util.Locale
 import java.util.Objects
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
     val context = LocalContext.current
     val url = viewModel.url.value
     val bitmap = viewModel.bitmap
     var isLoading by remember { mutableStateOf(false) }
+    var resolutionOptionExpanded by remember { mutableStateOf(false) }
+//    val scrollState = rememberScrollState()
 
     LaunchedEffect(bitmap, url) {
+        PlanUtils.getMyPlan(context, viewModel)
+
         if (bitmap != null && url.isEmpty()) {
             launch {
                 generateImageFromBitmap(context, viewModel) {
                     isLoading = it
                 }
+
             }
         }
     }
@@ -98,6 +122,7 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
         modifier = Modifier
             .background(colorResource(id = R.color.black))
             .fillMaxHeight(),
+//            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Header(navController, viewModel)
@@ -107,6 +132,7 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
         }
 
         Column {
+            ResolutionSetting(viewModel)
             Title(text1 = "Style", text2 = "")
             RefLibrary(viewModel)
             Spacer(Modifier.height(12.dp))
@@ -117,7 +143,7 @@ fun AIToolScreen(navController: NavController, viewModel: DocsViewModel) {
             )
             {
                 GenerateSetting(
-                    url.isNotEmpty(),
+                    url.isNotEmpty() && viewModel.numberOfGeneration.intValue > 0,
                     navController
                 )
             }
@@ -191,8 +217,14 @@ private fun InsertImage(
         if (isLoading) {
             CircularProgressIndicator()
         } else if (viewModel.url.value.isNotEmpty()) {
+            var bitmap by remember { mutableStateOf<Bitmap?>(null) }
+            LaunchedEffect(viewModel.url.value) {
+                bitmap = withContext(Dispatchers.IO) {
+                    getBitmapFromUrl(viewModel.url.value, context, viewModel.accessToken.value) // Call suspending function
+                }
+            }
             GlideImage(
-                model = viewModel.url.value,
+                model = bitmap,
                 contentDescription = null,
                 contentScale = ContentScale.Inside
             )

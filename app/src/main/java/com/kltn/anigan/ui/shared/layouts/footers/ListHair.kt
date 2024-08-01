@@ -17,11 +17,11 @@ import com.kltn.anigan.R
 @Composable
 fun ListHair(onClick: (Int) -> Unit) {
     val listColor = arrayListOf(
-        R.drawable.male_3,
-        R.drawable.female_6,
-        R.drawable.female_7,
-        R.drawable.female_8,
-        R.drawable.female_9,
+        R.drawable.male_3_1,
+        R.drawable.female_6_1,
+        R.drawable.female_7_1,
+        R.drawable.female_8_1,
+        R.drawable.female_9_1,
     )
 
     Row(

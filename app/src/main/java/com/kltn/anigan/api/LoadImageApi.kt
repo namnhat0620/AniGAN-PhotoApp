@@ -25,6 +25,7 @@ interface LoadImageApi {
     @GET("/image")
     fun getRefImage(
         @Header("Authorization") token: String?,
+        @Query("device_id") deviceId: String,
         @Query("type") type: Int,
         @Query("page") page: Int,
         @Query("limit") limit: Int = 5

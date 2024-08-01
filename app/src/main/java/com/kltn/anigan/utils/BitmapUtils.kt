@@ -161,7 +161,7 @@ class BitmapUtils {
 
         fun rotateBitmap(bitmap: Bitmap, angle: Float): Bitmap {
             val matrix = Matrix()
-            matrix.postRotate(angle)
+            matrix.postRotate(angle, 0F,0F)
             return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
         }
 
